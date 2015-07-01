@@ -164,7 +164,7 @@ class EventMachine(object):
     def waitForMessage(self, class_):
         return self.msg.waitFor(class_)
     
-    def start(self, driver=None):
+    def start(self, name=None, driver=None):
         with self.runningLock:
             if self.running:
                 return
@@ -174,7 +174,7 @@ class EventMachine(object):
                 self.driver = driver
             self.driver.open()
             
-            evPump = self.eventPump = Thread(target=EventPump, args=(self,))
+            evPump = self.eventPump = Thread(name=name, target=EventPump, args=(self,))
             evPump.start()
     
     def stop(self):

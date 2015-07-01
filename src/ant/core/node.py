@@ -183,8 +183,9 @@ class Channel(event.EventCallback):
 
 
 class Node(object):
-    def __init__(self, driver):
+    def __init__(self, driver, name=None):
         self.evm = event.EventMachine(driver)
+        self.name = name
         self.networks = []
         self.channels = []
         self.options = [0x00, 0x00, 0x00]
@@ -202,7 +203,7 @@ class Node(object):
             raise NodeError('Could not start ANT node (already started).')
         
         evm = self.evm
-        evm.start()
+        evm.start(name=self.name)
         
         try:
             self.reset()
