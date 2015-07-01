@@ -34,7 +34,7 @@ from serial import Serial, SerialException, SerialTimeoutException
 from usb.control import get_interface
 from usb.core import USBError, find as findDeviceUSB
 from usb.util import (find_descriptor, claim_interface, release_interface,
-                      endpoint_direction, ENDPOINT_OUT, ENDPOINT_IN)
+                      dispose_resources, endpoint_direction, ENDPOINT_OUT, ENDPOINT_IN)
 
 from ant.core.exceptions import DriverError
 
@@ -224,8 +224,12 @@ class USB2Driver(Driver):
         return self._dev is not None
     
     def _close(self):
-        release_interface(self._dev, self._int)
+        dev = self._dev
+        release_interface(dev, self._int)
+        dispose_resources(dev)
         self._dev = None
+        # release 'Endpoints' objects for prevent undeleted 'Device' resource
+        self._ep_out = self._ep_in = None
     
     def _read(self, count):
         return self._ep_in.read(count).tostring()
