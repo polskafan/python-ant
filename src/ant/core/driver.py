@@ -134,10 +134,10 @@ class Driver(object):
 
 
 class USB1Driver(Driver):
-    def __init__(self, device, baud_rate=115200, log=None, debug=False):
+    def __init__(self, device, baudRate=115200, log=None, debug=False):
         super(USB1Driver, self).__init__(log, debug)
         self.device = device
-        self.baud = baud_rate
+        self.baud = baudRate
         self._serial = None
     
     def _open(self):
@@ -176,10 +176,10 @@ class USB2Driver(Driver):
     
     def __init__(self, log=None, debug=False):
         super(USB2Driver, self).__init__(log, debug)
-        self._ep_out = None
-        self._ep_in = None
+        self._epOut = None
+        self._epIn = None
         self._dev = None
-        self._int = None
+        self._intNum = None
     
     def _open(self):
         # Most of this is straight from the PyUSB example documentation
@@ -197,27 +197,28 @@ class USB2Driver(Driver):
         
         dev.set_configuration()
         cfg = dev.get_active_configuration()
-        interface_number = cfg[(0, 0)].bInterfaceNumber
+        interfaceNumber = cfg[(0, 0)].bInterfaceNumber
+        
         intf = find_descriptor(cfg,
-            bInterfaceNumber=interface_number,
-            bAlternateSetting=get_interface(dev, interface_number)
+            bInterfaceNumber=interfaceNumber,
+            bAlternateSetting=get_interface(dev, interfaceNumber)
         )
         
-        claim_interface(dev, interface_number)
-        ep_out = find_descriptor(intf, custom_match= \
+        claim_interface(dev, interfaceNumber)
+        epOut = find_descriptor(intf, custom_match= \
             lambda e: endpoint_direction(e.bEndpointAddress) == ENDPOINT_OUT
         )
-        assert ep_out is not None
+        assert epOut is not None
         
         ep_in = find_descriptor(intf, custom_match= \
             lambda e: endpoint_direction(e.bEndpointAddress) == ENDPOINT_IN
         )
         assert ep_in is not None
         
-        self._ep_out = ep_out
-        self._ep_in = ep_in
+        self._epOut = epOut
+        self._epIn = ep_in
         self._dev = dev
-        self._int = interface_number
+        self._intNum = interfaceNumber
     
     @property
     def _opened(self):
@@ -225,14 +226,14 @@ class USB2Driver(Driver):
     
     def _close(self):
         dev = self._dev
-        release_interface(dev, self._int)
+        release_interface(dev, self._intNum)
         dispose_resources(dev)
         self._dev = None
         # release 'Endpoints' objects for prevent undeleted 'Device' resource
-        self._ep_out = self._ep_in = None
+        self._epOut = self._epIn = None
     
     def _read(self, count):
-        return self._ep_in.read(count).tostring()
+        return self._epIn.read(count).tostring()
     
     def _write(self, data):
-        return self._ep_out.write(data)
+        return self._epOut.write(data)
