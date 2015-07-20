@@ -59,7 +59,7 @@ setup(
     package_dir={'': 'src'},
     install_requires=[
         'pyserial',
-        'pyusb',
+        'pyusb>=1.0.0',
         'msgpack-python'
     ],
 )
