@@ -85,8 +85,6 @@ class Driver(object):
         return data
     
     def write(self, data):
-        if len(data) <= 0:
-            raise DriverError("Could not write to device (no data).")
         if not self.opened:
             raise DriverError("Could not write to device (not open).")
         
