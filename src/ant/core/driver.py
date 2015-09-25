@@ -102,16 +102,13 @@ class Driver(object):
         if len(data) == 0:
             return
         
-        print("========== [{0}] ==========".format(title))
+        print("========== [%s] ==========" % title)
         
-        length = 8
-        line = 0
+        line, length = 0, 8
         while data:
-            row = data[:length]
-            data = data[length:]
-            hex_data = [b'%02X' % ord(byte) for byte in row]
-            print(b'%04X' % line, b' '.join(hex_data))
             line += length
+            print('%04X' % line, *('%02X' % ord(byte) for byte in data[:length]))
+            data = data[length:]
         
         print()
     
@@ -149,7 +146,7 @@ class USB1Driver(Driver):
             raise DriverError("Could not open device")
         
         self._serial = dev
-        self._serial.timeout = 0.01
+        dev.timeout = 0.01
     
     @property
     def _opened(self):
