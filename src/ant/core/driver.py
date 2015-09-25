@@ -40,8 +40,7 @@ from ant.core.exceptions import DriverError
 
 
 class Driver(object):
-    def __init__(self, device, log=None, debug=False):
-        self.device = device
+    def __init__(self, log=None, debug=False):
         self.debug = debug
         self.log = log
         self._lock = Lock()
