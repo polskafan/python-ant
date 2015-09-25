@@ -111,6 +111,7 @@ class Driver(object):
             data = data[length:]
             hex_data = [b'%02X' % ord(byte) for byte in row]
             print(b'%04X' % line, b' '.join(hex_data))
+            line += length
         
         print()
     
