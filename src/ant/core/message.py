@@ -63,6 +63,9 @@ class MessageType(type):
                                internal=Message.CORRUPTED)
 
 
+MSG_HEADER_SIZE = 3
+MSG_FOOTER_SIZE = 1
+
 class Message(object):
     __metaclass__ = MessageType
     TYPES = {}
@@ -71,7 +74,6 @@ class Message(object):
     INCOMPLETE = 'incomplete'
     CORRUPTED = 'corrupted'
     MALFORMED = 'malformed'
-    
     
     def __init__(self, payload=None):
         self._payload = None
@@ -96,8 +98,8 @@ class Message(object):
     
     def encode(self):
         raw, payload = bytearray(len(self)), self._payload
-        raw[0:2] = ( MESSAGE_TX_SYNC, len(payload), self.type )
-        raw[3:-1] = payload
+        raw[0:MSG_HEADER_SIZE-1] = ( MESSAGE_TX_SYNC, len(payload), self.type )
+        raw[MSG_HEADER_SIZE:-MSG_FOOTER_SIZE] = payload
         raw[-1] = self.checksum
         return raw
     
@@ -108,26 +110,26 @@ class Message(object):
             raise MessageError('Could not decode (message is incomplete).',
                                internal=Message.INCOMPLETE)
         
-        sync, length, type_ = raw[:3]
+        sync, length, type_ = raw[:MSG_HEADER_SIZE]
         
         if sync != MESSAGE_TX_SYNC:
             raise MessageError('Could not decode (expected TX sync).',
                                internal=Message.CORRUPTED)
-        if len(raw) < (length + 4):
+        if len(raw) < (length + MSG_HEADER_SIZE + MSG_FOOTER_SIZE):
             raise MessageError('Could not decode (message is incomplete).',
                                internal=Message.INCOMPLETE)
             
         msg = Message(type=type_)  # pylint: disable=unexpected-keyword-arg
-        msg.payload = raw[3:length + 3]
+        msg.payload = raw[MSG_HEADER_SIZE:length + MSG_HEADER_SIZE]
         
-        if msg.checksum != raw[length + 3]:
+        if msg.checksum != raw[length + MSG_HEADER_SIZE]:
             raise MessageError('Could not decode (bad checksum).',
                                internal=Message.CORRUPTED)
         
         return msg
     
     def __len__(self):
-        return len(self._payload) + 4
+        return len(self._payload) + MSG_HEADER_SIZE + MSG_FOOTER_SIZE
     
     def __str__(self, data=None):
         rawstr = '<' + self.__class__.__name__
