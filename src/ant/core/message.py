@@ -387,7 +387,8 @@ class ChannelEventResponseMessage(ChannelMessage):
     type = constants.MESSAGE_CHANNEL_EVENT
     
     def __init__(self, number=0x00, message_id=0x00, message_code=0x00):
-        super(ChannelEventResponseMessage, self).__init__(payload=bytearray(2), number=number)
+        super(ChannelEventResponseMessage, self).__init__(payload=bytearray(2),
+                                                          number=number)
         self.messageID = message_id
         self.messageCode = message_code
     
