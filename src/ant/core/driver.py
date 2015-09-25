@@ -83,11 +83,12 @@ class Driver(object):
                 self._dump(data, 'READ')
         return data
     
-    def write(self, data):
+    def write(self, msg):
         if not self.opened:
             raise DriverError("Could not write to device (not open).")
         
-        ret = self._write(data.encode())
+        data = msg.encode()
+        ret = self._write(data)
         
         with self._lock:
             if self.debug:
