@@ -92,7 +92,7 @@ class Driver(object):
         
         with self._lock:
             if self.debug:
-                self._dump(data, 'WRITE')
+                self._dump(str(data), 'WRITE')
             if self.log:
                 self.log.logWrite(data[0:ret])
         return ret
