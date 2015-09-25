@@ -133,7 +133,7 @@ class Driver(object):
 
 class USB1Driver(Driver):
     def __init__(self, device, baudRate=115200, log=None, debug=False):
-        super(USB1Driver, self).__init__(log, debug)
+        super(USB1Driver, self).__init__(log=log, debug=debug)
         self.device = device
         self.baud = baudRate
         self._serial = None
@@ -173,7 +173,7 @@ class USB1Driver(Driver):
 class USB2Driver(Driver):
     
     def __init__(self, log=None, debug=False):
-        super(USB2Driver, self).__init__(log, debug)
+        super(USB2Driver, self).__init__(log=log, debug=debug)
         self._epOut = None
         self._epIn = None
         self._dev = None
