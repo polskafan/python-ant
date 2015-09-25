@@ -89,17 +89,16 @@ class Message(object):
     
     @property
     def checksum(self):
-        checksum = MESSAGE_TX_SYNC
-        checksum ^= len(self._payload)
-        checksum ^= self.type
+        checksum = MESSAGE_TX_SYNC ^ len(self._payload) ^ self.type
         for byte in self._payload:
             checksum ^= byte
         return checksum
     
     def encode(self):
-        raw = bytearray(( MESSAGE_TX_SYNC, len(self._payload), self.type ))
-        raw += self._payload
-        raw.append(self.checksum)
+        raw, payload = bytearray(len(self)), self._payload
+        raw[0:2] = ( MESSAGE_TX_SYNC, len(payload), self.type )
+        raw[3:-1] = payload
+        raw[-1] = self.checksum
         return raw
     
     @classmethod
