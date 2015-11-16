@@ -27,7 +27,7 @@ import os
 
 from setuptools import setup, find_packages
 
-baseDir = os.path.dirname(__file__)
+baseDir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(baseDir)
 
 def read(fname):
