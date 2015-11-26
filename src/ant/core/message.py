@@ -28,6 +28,8 @@ from __future__ import division, absolute_import, print_function, unicode_litera
 
 from struct import pack, unpack
 
+from six import with_metaclass
+
 from ant.core import constants
 from ant.core.constants import MESSAGE_TX_SYNC, RESPONSE_NO_ERROR
 from ant.core.exceptions import MessageError
@@ -66,8 +68,7 @@ class MessageType(type):
 MSG_HEADER_SIZE = 3
 MSG_FOOTER_SIZE = 1
 
-class Message(object):
-    __metaclass__ = MessageType
+class Message(with_metaclass(MessageType)):
     TYPES = {}
     type = None
     
