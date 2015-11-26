@@ -536,7 +536,7 @@ class CapabilitiesMessage(Message):
         if (num > 0xFF) or (num < 0x00):
             raise MessageError('Could not set adv options 2 (out of range).')
         if len(self._payload) == 4:
-            self._payload.append(b'\x00')
+            self._payload.append(0)
         self._payload[4] = num
 
 
