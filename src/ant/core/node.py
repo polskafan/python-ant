@@ -198,7 +198,7 @@ class Node(object):
         if wait:
             evm.waitForMessage(message.StartupMessage)
     
-    def start(self):
+    def start(self, wait=True):
         if self.running:
             raise NodeError('Could not start ANT node (already started).')
         
@@ -206,7 +206,7 @@ class Node(object):
         evm.start(name=self.name)
         
         try:
-            self.reset()
+            self.reset(wait)
             msg = message.ChannelRequestMessage(messageID=MESSAGE_CAPABILITIES)
             caps = evm.writeMessage(msg).waitForMessage(message.CapabilitiesMessage)
         except MessageError as err:
