@@ -227,11 +227,12 @@ class Node(object):
     def getCapabilities(self):
         return (len(self.channels), len(self.networks), self.options)
     
-    def setNetworkKey(self, number, key=None):
+    def setNetworkKey(self, number, network=None):
         networks = self.networks
-        if key is not None:
-            networks[number] = key
-        network = networks[number]
+        if network is None:
+            network = networks[number]
+        else:
+            networks[number] = network
         
         msg = message.NetworkKeyMessage(number, network.key)
         try:
