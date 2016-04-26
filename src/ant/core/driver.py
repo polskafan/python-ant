@@ -170,8 +170,11 @@ class USB1Driver(Driver):
 
 class USB2Driver(Driver):
     
-    def __init__(self, log=None, debug=False):
+    def __init__(self, idVendor=0x0fcf, idProduct=0x1008, log=None, debug=False):
         super(USB2Driver, self).__init__(log=log, debug=debug)
+        self.idVendor = idVendor
+        self.idProduct = idProduct
+        
         self._epOut = None
         self._epIn = None
         self._dev = None
@@ -179,7 +182,7 @@ class USB2Driver(Driver):
     
     def _open(self):
         # Most of this is straight from the PyUSB example documentation
-        dev = findDeviceUSB(idVendor=0x0fcf, idProduct=0x1008)
+        dev = findDeviceUSB(idVendor=self.idVendor, idProduct=self.idProduct)
         
         if dev is None:
             raise DriverError("Could not open device (not found)")
