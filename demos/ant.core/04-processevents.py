@@ -19,7 +19,7 @@ NETKEY = '\xB9\xA5\x21\xFB\xBD\x72\xC3\x45'
 
 # A run-the-mill event listener
 class HRMListener(event.EventCallback):
-    def process(self, msg):
+    def process(self, msg, _channel):
         if isinstance(msg, message.ChannelBroadcastDataMessage):
             print 'Heart Rate:', ord(msg.payload[-1])
 

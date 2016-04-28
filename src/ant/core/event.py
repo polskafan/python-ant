@@ -80,6 +80,7 @@ def EventPump(evm):
 
 
 class EventCallback(object):
+    
     def process(self, msg):
         raise NotImplementedError()
 
