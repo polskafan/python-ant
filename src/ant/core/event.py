@@ -49,7 +49,7 @@ def EventPump(evm):
         try:
             buffer_ += evm.driver.read(20)
         except USBError as e:
-            if e.errno == 110:  # timeout
+            if e.errno in (60, 110):  # timeout
                 continue
             else:
                 raise
