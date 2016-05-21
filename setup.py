@@ -61,6 +61,6 @@ setup(
         'pyserial',
         'pyusb>=1.0.0b2',
         'msgpack-python',
-        'six',
+        'six>=1.7.0',
     ],
 )
