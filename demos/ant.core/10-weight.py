@@ -4,6 +4,8 @@ incoming data.
 
 """
 
+from __future__ import print_function
+
 import sys
 import time
 
@@ -46,9 +48,11 @@ RECV = 0
 class WeightListener(event.EventCallback):
     def process(self, msg, _channel):
         global RECV
-        evm = _channel.node.evm
         if isinstance(msg, message.ChannelBroadcastDataMessage):
-            print [map(hex, msg.payload)]
+#            print('R%04X: ' % RECV, *('%02X' % ord(byte) for byte in msg.payload))
+            data = str(msg.payload)
+            print('%04X' % RECV, *('%02X' % ord(byte) for byte in data))
+#            print [map(ord, msg.payload)]
             page_number = msg.payload[1]
             RECV += 1
             if   page_number == 1: 
@@ -71,8 +75,8 @@ def reset_channel(antnode, channel=None):
     channel.name = 'C:WGT'
     channel.assign(net, CHANNEL_TYPE_TWOWAY_RECEIVE)
     channel.setID(119, 0, 0)
-    channel.period = 8070
-    channel.frequency = 57
+    channel.period = 0x2000  # nebo 0x0020 ???
+    channel.frequency = 0x39
 
     rs.channelNumber = channel.number
     channel.node.evm.writeMessage(rs)
@@ -82,13 +86,12 @@ def reset_channel(antnode, channel=None):
 
     channel.registerCallback(WeightListener())
 
-    print "Opened channel "+str(channel.number)
     return channel
 
 
 # Initialize
-LOG=None
-DEBUG=False
+#LOG=None
+#DEBUG=False
 
 stick = driver.USB1Driver(SERIAL, log=LOG, debug=DEBUG)
 antnode = node.Node(stick)
@@ -99,14 +102,17 @@ net = node.Network(name='N:ANT+', key=NETKEY)
 antnode.setNetworkKey(0, net)
 
 channel = reset_channel(antnode)
-
+restart = int(time.time())
 # Wait
-print "Listening for weight scale events ..."
-while True: 
+print("Listening for weight scale events ...")
+while True:
+    time.sleep(0.1)
     # Restart channel every 3 seconds
-    if int(time.time()) % 3 == 0:
+    now = int(time.time())
+    if (now % 3 == 0) and (now != restart):
         channel = reset_channel(antnode, channel)
         RECV = 0
+        restart = now
 
 
 # Shutdown
