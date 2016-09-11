@@ -29,15 +29,15 @@ antnode = node.Node(stick)
 antnode.start()
 
 # Setup channel
-key = node.NetworkKey('N:ANT+', NETKEY)
-antnode.setNetworkKey(0, key)
+net = node.Network(name='N:ANT+', key=NETKEY)
+antnode.setNetworkKey(0, net)
 channel = antnode.getFreeChannel()
 channel.name = 'C:HRM'
-channel.assign('N:ANT+', CHANNEL_TYPE_TWOWAY_RECEIVE)
+channel.assign(net, CHANNEL_TYPE_TWOWAY_RECEIVE)
 channel.setID(120, 0, 0)
-channel.setSearchTimeout(TIMEOUT_NEVER)
-channel.setPeriod(8070)
-channel.setFrequency(57)
+channel.searchTimeout = TIMEOUT_NEVER
+channel.period = 8070
+channel.frequency = 57
 channel.open()
 
 # Setup callback
