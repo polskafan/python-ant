@@ -111,7 +111,11 @@ class LogWriter(object):
             ev = ev[0:-1]
         elif len(data) == 0:
             return
-        
+       
+        # sending bytearray to packer throws an exception in msgpack
+        if type(ev[-1]) is bytearray:
+            ev[-1] = list(ev[-1])
+
         self.fd.write(self.packer.pack(ev))
     
     def logOpen(self):

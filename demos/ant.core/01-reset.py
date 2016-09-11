@@ -26,10 +26,9 @@ except driver.DriverError, e:
 
 # At any point in our node's life, we could manually call reset() to re-
 # initialize the stick and Node. Like this:
-#antnode.reset()
+antnode.reset()
 
 # Stop the ANT node. This should close all open channels, and do final system
-# reset on the stick. However, considering we just did a reset, we explicitly
-# tell our node to skip the reset. This call will also automatically release
+# reset on the stick. This call will also automatically release
 # the stick by calling close() on the driver.
-antnode.stop(reset=False)
+antnode.stop()
