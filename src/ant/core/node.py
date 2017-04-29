@@ -41,7 +41,7 @@ class Network(object):
         self.key = key
         self.name = name
         self.number = 0
-    
+
     def __str__(self):
         name = self.name
         return name if name is not None else self.key
@@ -67,26 +67,26 @@ class Channel(event.EventCallback):
         self._searchTimeout = None
         self._period = None
         self._frequency = None
-    
+
     def assign(self, network, channelType):
         msg = message.ChannelAssignMessage(self.number, channelType, network.number)
         try:
             self.node.evm.writeMessage(msg).waitForAck(msg)
         except MessageError as err:
             raise ChannelError('%s: could not assign: %s' % (self, err))
-        
+
         self.type = channelType
         self.network = network
-    
+
     def setID(self, devType, devNum, transType):
         msg = message.ChannelIDMessage(self.number, devNum, devType, transType)
         try:
             self.node.evm.writeMessage(msg).waitForAck(msg)
         except MessageError as err:
             raise ChannelError('%s: could not set ID: %s' % (self, err))
-        
+
         self.device = Device(devNum, devType, transType)
-    
+
     @property
     def searchTimeout(self):
         return self._searchTimeout
@@ -97,9 +97,9 @@ class Channel(event.EventCallback):
             self.node.evm.writeMessage(msg).waitForAck(msg)
         except MessageError as err:
             raise ChannelError('%s: could not set search timeout: %s' % (self, err))
-        
+
         self._searchTimeout = timeout
-    
+
     @property
     def period(self):
         return self._period
@@ -110,9 +110,9 @@ class Channel(event.EventCallback):
             self.node.evm.writeMessage(msg).waitForAck(msg)
         except MessageError as err:
             raise ChannelError('%s: could not set period: %s' % (self, err))
-        
+
         self._period = counts
-    
+
     @property
     def frequency(self):
         return self._frequency
@@ -123,9 +123,9 @@ class Channel(event.EventCallback):
             self.node.evm.writeMessage(msg).waitForAck(msg)
         except MessageError as err:
             raise ChannelError('%s: could not set frequency: %s' % (self, err))
-        
+
         self._frequency = frequency
-    
+
     def open(self):
         msg = message.ChannelOpenMessage(number=self.number)
         evm = self.node.evm
@@ -133,9 +133,9 @@ class Channel(event.EventCallback):
             evm.writeMessage(msg).waitForAck(msg)
         except MessageError as err:
             raise ChannelError('%s: could not open: %s' % (self, err))
-        
+
         evm.registerCallback(self)
-    
+
     def close(self):
         msg = message.ChannelCloseMessage(number=self.number)
         evm = self.node.evm
@@ -143,28 +143,28 @@ class Channel(event.EventCallback):
             evm.writeMessage(msg).waitForAck(msg)
         except MessageError as err:
             raise ChannelError('%s: could not close: %s' % (self, err))
-        
+
         while True:
             msg = evm.waitForMessage(message.ChannelEventResponseMessage)
             if msg.channelNumber == self.number and \
                msg.messageCode == EVENT_CHANNEL_CLOSED:
                 break
-        
+
         evm.removeCallback(self)
-    
+
     def unassign(self):
         msg = message.ChannelUnassignMessage(number=self.number)
         try:
             self.node.evm.writeMessage(msg).waitForAck(msg)
         except MessageError as err:
             raise ChannelError('%s: could not unassign: %s' % (self, err))
-        
+
         self.network = None
-    
+
     def registerCallback(self, callback):
         with self.evmCallbackLock:
             self.callbacks.add(callback)
-    
+
     def process(self, msg):
         with self.evmCallbackLock:
             if isinstance(msg, ChannelMessage) and msg.channelNumber == self.number:
@@ -173,7 +173,7 @@ class Channel(event.EventCallback):
                         callback.process(msg, self)
                     except Exception as err:  # pylint: disable=broad-except
                         print(err)
-    
+
     def __str__(self):
         rawstr = '<channel %d' % self.number
         device = self.device
@@ -189,22 +189,22 @@ class Node(object):
         self.networks = []
         self.channels = []
         self.options = [0x00, 0x00, 0x00]
-    
+
     running = property(lambda self: self.evm.running)
-    
+
     def reset(self, wait=True):
         evm = self.evm
         evm.writeMessage(message.SystemResetMessage())
         if wait:
             evm.waitForMessage(message.StartupMessage)
-    
+
     def start(self, wait=True):
         if self.running:
             raise NodeError('Could not start ANT node (already started).')
-        
+
         evm = self.evm
         evm.start(name=self.name)
-        
+
         try:
             self.reset(wait)
             msg = message.ChannelRequestMessage(messageID=MESSAGE_CAPABILITIES)
@@ -220,33 +220,33 @@ class Node(object):
     def stop(self):
         if not self.running:
             raise NodeError('Could not stop ANT node (not started).')
-        
+
         self.reset(wait=False)
         self.evm.stop()
-    
+
     def getCapabilities(self):
         return (len(self.channels), len(self.networks), self.options)
-    
+
     def setNetworkKey(self, number, network=None):
         networks = self.networks
         if network is None:
             network = networks[number]
         else:
             networks[number] = network
-        
+
         msg = message.NetworkKeyMessage(number, network.key)
         try:
             self.evm.writeMessage(msg).waitForAck(msg)
         except MessageError as err:
             raise NodeError("could not set network key '%d': %s" % (number, err))
-        
+
         network.number = number
-    
+
     def getFreeChannel(self):
         for channel in self.channels:
             if channel.network is None:
                 return channel
         raise NodeError('Could not find free channel.')
-    
+
     def registerEventListener(self, callback):
         self.evm.registerCallback(callback)

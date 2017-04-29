@@ -45,7 +45,7 @@ def EventPump(evm):
         with evm.runningLock:
             if not evm.running:
                 break
-        
+
         try:
             buffer_ += evm.driver.read(20)
         except USBError as e:
@@ -53,7 +53,7 @@ def EventPump(evm):
                 continue
             else:
                 raise
-        
+
         messages = []
         while len(buffer_) > 0:
             try:
@@ -69,7 +69,7 @@ def EventPump(evm):
                     buffer_ = buffer_[i:]
                 else:
                     break
-        
+
         with evm.evmCallbackLock:
             for message in messages:
                 for callback in evm.callbacks:
@@ -80,7 +80,7 @@ def EventPump(evm):
 
 
 class EventCallback(object):
-    
+
     def process(self, msg):
         raise NotImplementedError()
 
@@ -88,11 +88,11 @@ class EventCallback(object):
 class EventMachineCallback(EventCallback):
     MAX_QUEUE = 25
     WAIT_UNTIL = staticmethod(lambda _,__:None)
-    
+
     def __init__(self):
         self.messages = []
         self.lock = Lock()
-    
+
     def process(self, msg):
         with self.lock:
             messages = self.messages
@@ -100,7 +100,7 @@ class EventMachineCallback(EventCallback):
             MAX_QUEUE = self.MAX_QUEUE
             if len(messages) > MAX_QUEUE:
                 self.messages = messages[-MAX_QUEUE:]
-    
+
     def waitFor(self, foo, timeout=10):  # pylint: disable=blacklisted-name
         messages = self.messages
         basetime = time()
@@ -115,7 +115,7 @@ class EventMachineCallback(EventCallback):
 
 class AckCallback(EventMachineCallback):
     WAIT_UNTIL = staticmethod(lambda msg, emsg: msg.type == emsg.messageID)
-    
+
     def process(self, msg):
         if isinstance(msg, ChannelEventResponseMessage) and \
            msg.messageID != 1:  # response message, not event
@@ -132,52 +132,52 @@ class EventMachine(object):
         self.callbacks = set()
         self.eventPump = None
         self.running = False
-        
+
         self.evmCallbackLock = Lock()
         self.runningLock = Lock()
-        
+
         self.ack = ack = AckCallback()
         self.msg = msg = MsgCallback()
         self.registerCallback(ack)
         self.registerCallback(msg)
-    
+
     def registerCallback(self, callback):
         with self.evmCallbackLock:
             self.callbacks.add(callback)
-    
+
     def removeCallback(self, callback):
         with self.evmCallbackLock:
             try:
                 self.callbacks.remove(callback)
             except KeyError:
                 pass
-    
+
     def writeMessage(self, msg):
         self.driver.write(msg)
         return self
-    
+
     def waitForAck(self, msg):
         response = self.ack.waitFor(msg).messageCode
         if response != RESPONSE_NO_ERROR:
             raise MessageError("bad response code (%.2x)" % response,
                                internal=(msg, response))
-    
+
     def waitForMessage(self, class_):
         return self.msg.waitFor(class_)
-    
+
     def start(self, name=None, driver=None):
         with self.runningLock:
             if self.running:
                 return
             self.running = True
-            
+
             if driver is not None:
                 self.driver = driver
             self.driver.open()
-            
+
             evPump = self.eventPump = Thread(name=name, target=EventPump, args=(self,))
             evPump.start()
-    
+
     def stop(self):
         with self.runningLock:
             if not self.running:
