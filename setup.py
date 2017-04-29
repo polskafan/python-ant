@@ -26,6 +26,7 @@
 import os
 
 from setuptools import setup, find_packages
+from unittest import TestLoader
 
 baseDir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(baseDir)
@@ -33,10 +34,13 @@ os.chdir(baseDir)
 def read(fname):
     return open(os.path.join(baseDir, fname)).read()
 
+def test_suite():
+    return TestLoader().discover('tests', pattern='test_*.py')
+
 setup(
     name='ant',
     version='0.1.1',
-    url='http://www.github.com/mvillalba/python-ant',
+    url='http://www.github.com/mch/python-ant',
     license='MIT',
     description='Python implementation of the ANT, ANT+, and ANT-FS ' \
                 'protocols (http://www.thisisant.com/).',
@@ -63,4 +67,5 @@ setup(
         'msgpack-python',
         'six>=1.7.0',
     ],
+    test_suite='setup.test_suite'
 )
