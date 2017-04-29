@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+"""ANT+ device profiles.
+
+Not implemented.
+"""
+
 ##############################################################################
 #
 # Copyright (c) 2011, Martín Raúl Villalba

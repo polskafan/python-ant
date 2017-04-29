@@ -47,7 +47,7 @@ class LogReader(object):
             self.fd.close()
 
     def open(self, filename):
-        if self.is_open == True:
+        if self.is_open:
             self.close()
 
         self.fd = open(filename, 'r')
@@ -89,7 +89,7 @@ class LogWriter(object):
             filename = datetime.datetime.now().isoformat() + '.ant'
         self.filename = filename
 
-        if self.is_open == True:
+        if self.is_open:
             self.close()
 
         self.fd = open(filename, 'w')
@@ -109,11 +109,11 @@ class LogWriter(object):
 
         if data is None:
             ev = ev[0:-1]
-        elif len(data) == 0:
+        elif not data:
             return
 
         # sending bytearray to packer throws an exception in msgpack
-        if type(ev[-1]) is bytearray:
+        if isinstance(ev[-1], bytearray):
             ev[-1] = list(ev[-1])
 
         self.fd.write(self.packer.pack(ev))

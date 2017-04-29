@@ -213,8 +213,8 @@ class Node(object):
             self.stop()
             raise NodeError(err)
         else:
-            self.networks = [ None ] * caps.maxNetworks
-            self.channels = [ Channel(self, i) for i in range(0, caps.maxChannels) ]
+            self.networks = [None] * caps.maxNetworks
+            self.channels = [Channel(self, i) for i in range(0, caps.maxChannels)]
             self.options = (caps.stdOptions, caps.advOptions, caps.advOptions2)
 
     def stop(self):

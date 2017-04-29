@@ -1,4 +1,11 @@
 # -*- coding: utf-8 -*-
+"""ANT FS
+
+A robust framework for transferring files wirelessly between devices.
+
+Not implemented.
+"""
+
 ##############################################################################
 #
 # Copyright (c) 2011, Martín Raúl Villalba

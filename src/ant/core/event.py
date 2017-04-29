@@ -55,7 +55,7 @@ def EventPump(evm):
                 raise
 
         messages = []
-        while len(buffer_) > 0:
+        while buffer_:
             try:
                 msg = Message.decode(buffer_)
                 messages.append(msg)
@@ -87,7 +87,7 @@ class EventCallback(object):
 
 class EventMachineCallback(EventCallback):
     MAX_QUEUE = 25
-    WAIT_UNTIL = staticmethod(lambda _,__:None)
+    WAIT_UNTIL = staticmethod(lambda _, __: None)
 
     def __init__(self):
         self.messages = []

@@ -1,4 +1,11 @@
 # -*- coding: utf-8 -*-
+"""Implementation of the ANT protocols.
+
+This library can be used to communicate with ANT devices via a USB stick.
+
+thisisant.com
+"""
+
 ##############################################################################
 #
 # Copyright (c) 2011, Martín Raúl Villalba

@@ -99,7 +99,7 @@ class Message(with_metaclass(MessageType)):
 
     def encode(self):
         raw, payload = bytearray(len(self)), self._payload
-        raw[0:MSG_HEADER_SIZE-1] = ( MESSAGE_TX_SYNC, len(payload), self.type )
+        raw[0:MSG_HEADER_SIZE-1] = (MESSAGE_TX_SYNC, len(payload), self.type)
         raw[MSG_HEADER_SIZE:-MSG_FOOTER_SIZE] = payload
         raw[-1] = self.checksum
         return raw
@@ -419,10 +419,10 @@ class ChannelEventResponseMessage(ChannelMessage):
         msgCode = self.messageCode
         if self.messageID != 1:
             return "<ChannelResponse: '%s' on C(%d): %s>" % (
-                        self.TYPES[self.messageID].__name__, self.channelNumber,
-                        'OK' if msgCode == RESPONSE_NO_ERROR else '0x%.2x' % msgCode)
-        else:
-            return "<ChannelEvent: C(%d): 0x%.2x>" % (self.channelNumber, msgCode)
+                self.TYPES[self.messageID].__name__, self.channelNumber,
+                'OK' if msgCode == RESPONSE_NO_ERROR else '0x%.2x' % msgCode)
+
+        return "<ChannelEvent: C(%d): 0x%.2x>" % (self.channelNumber, msgCode)
 
 
 # Requested response messages

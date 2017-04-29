@@ -99,7 +99,7 @@ class Driver(object):
 
     @staticmethod
     def _dump(data, title):
-        if len(data) == 0:
+        if not data:
             return
 
         print("========== [%s] ==========" % title)
@@ -199,19 +199,19 @@ class USB2Driver(Driver):
         interfaceNumber = cfg[(0, 0)].bInterfaceNumber
 
         intf = find_descriptor(cfg,
-            bInterfaceNumber=interfaceNumber,
-            bAlternateSetting=get_interface(dev, interfaceNumber)
-        )
+                               bInterfaceNumber=interfaceNumber,
+                               bAlternateSetting=get_interface(dev, interfaceNumber))
 
         claim_interface(dev, interfaceNumber)
-        epOut = find_descriptor(intf, custom_match= \
+
+        endpoint_out_matcher = \
             lambda e: endpoint_direction(e.bEndpointAddress) == ENDPOINT_OUT
-        )
+        epOut = find_descriptor(intf, custom_match=endpoint_out_matcher)
         assert epOut is not None
 
-        ep_in = find_descriptor(intf, custom_match= \
+        endpoint_in_matcher = \
             lambda e: endpoint_direction(e.bEndpointAddress) == ENDPOINT_IN
-        )
+        ep_in = find_descriptor(intf, custom_match=endpoint_in_matcher)
         assert ep_in is not None
 
         self._epOut = epOut

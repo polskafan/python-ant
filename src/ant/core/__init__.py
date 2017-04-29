@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+"""Core ANT functionality.
+
+"""
+
 ##############################################################################
 #
 # Copyright (c) 2011, Martín Raúl Villalba
