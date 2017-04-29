@@ -80,7 +80,7 @@ class Driver(object):
             if self.log:
                 self.log.logRead(data)
             if self.debug:
-                self._dump(data, 'R')
+                self._dump(data, 'READ')
         return data
     
     def write(self, msg):
@@ -92,7 +92,7 @@ class Driver(object):
         
         with self._lock:
             if self.debug:
-                self._dump(str(data), 'W')
+                self._dump(str(data), 'WRITE')
             if self.log:
                 self.log.logWrite(data[0:ret])
         return ret
@@ -101,7 +101,16 @@ class Driver(object):
     def _dump(data, title):
         if len(data) == 0:
             return
-        print('%s:  ' % title, *('%02X' % ord(byte) for byte in data))
+        
+        print("========== [%s] ==========" % title)
+        
+        line, length = 0, 8
+        while data:
+            line += length
+            print('%04X' % line, *('%02X' % ord(byte) for byte in data[:length]))
+            data = data[length:]
+        
+        print()
     
     @property
     def _opened(self):
