@@ -171,7 +171,11 @@ class HeartRateTest(unittest.TestCase):
         self.assertEqual(pairing_device.transmissionType,
                          hr.channel.device.transmissionType)
 
-        self.assertEqual(0, hr.channel.assigned_network)
+        public_network = Network(key=NETWORK_KEY_ANT_PLUS, name='N:ANT+')
+        self.assertEqual(public_network.key, hr.channel.assigned_network.key)
+        self.assertEqual(public_network.name, hr.channel.assigned_network.name)
+        self.assertEqual(public_network.number, hr.channel.assigned_network.number)
+
         self.assertEqual(CHANNEL_TYPE_TWOWAY_RECEIVE, hr.channel.assigned_channel_type)
         self.assertEqual(0, hr.channel.assigned_channel_number)
 

@@ -78,7 +78,7 @@ class HeartRate:
         self.channel.setID(device_id, 0x78, transmission_type)
 
         self.channel.registerCallback(_HeartRateEvent(self))
-        self.channel.assign(0, CHANNEL_TYPE_TWOWAY_RECEIVE)
+        self.channel.assign(public_network, CHANNEL_TYPE_TWOWAY_RECEIVE)
 
         self.channel.open()
 
