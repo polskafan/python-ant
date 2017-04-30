@@ -26,6 +26,12 @@
 
 from __future__ import division, absolute_import, print_function, unicode_literals
 
+NETWORK_KEY_ANT_PLUS = b'\xB9\xA5\x21\xFB\xBD\x72\xC3\x45'
+NETWORK_KEY_ANT_PUBLIC = b'\xE8\xE4\x21\x3B\x55\x7A\x67\xC1'
+NETWORK_KEY_ANT_FS = b'\xA8\xA4\x23\xB9\xF5\x5E\x63\xC1'
+
+NETWORK_NUMBER_PUBLIC = 0
+
 MESSAGE_TX_SYNC = 0xA4
 
 # Configuration messages

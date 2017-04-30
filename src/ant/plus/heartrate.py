@@ -29,6 +29,36 @@
 
 __version__ = 'develop'
 
+from ant.core.node import Network
+from ant.core.constants import NETWORK_KEY_ANT_PLUS, NETWORK_NUMBER_PUBLIC, CHANNEL_TYPE_TWOWAY_RECEIVE
+
 class HeartRate:
-    pass
+
+    def __init__(self, node):
+        self.node = node
+
+        if not self.node.running:
+            raise Exception('Node must be running')
+
+        if len(self.node.networks) == 0:
+            raise Exception('Node must have an available network')
+
+        public_network = Network(key=NETWORK_KEY_ANT_PLUS, name='N:ANT+')
+        self.node.setNetworkKey(NETWORK_NUMBER_PUBLIC, public_network)
+
+        self.channel = self.node.getFreeChannel()
+        # todo getFreeChannel() can fail
+
+        self.channel.frequency = 0x39
+        self.channel.period = 8070
+        self.channel.searchTime = 30
+
+        # Default ID is set up for pairing
+        self.channel.setID(0, 0x78, 0)
+
+        self.channel.assign(0, CHANNEL_TYPE_TWOWAY_RECEIVE)
+
+        self.channel.open()
+
+
 
