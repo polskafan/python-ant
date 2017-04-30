@@ -29,6 +29,7 @@ import unittest
 from ant.core import event, message
 from ant.core.constants import NETWORK_KEY_ANT_PLUS, CHANNEL_TYPE_TWOWAY_RECEIVE
 from ant.core.node import Network, Node, Channel, Device
+from ant.core.message import ChannelBroadcastDataMessage
 
 from ant.plus.heartrate import HeartRate
 
@@ -165,7 +166,6 @@ class HeartRateTest(unittest.TestCase):
         # TODO device is the wrong name. The ANT docs refer to this
         # structure as a channel ID
         pairing_device = Device(0x78, 0, 0)
-        #self.assertEqual(pairing_device, hr.channel.device)
         self.assertEqual(pairing_device.number, hr.channel.device.number)
         self.assertEqual(pairing_device.type, hr.channel.device.type)
         self.assertEqual(pairing_device.transmissionType,
@@ -177,8 +177,23 @@ class HeartRateTest(unittest.TestCase):
 
         self.assertEqual(True, hr.channel.open_called)
 
-    @unittest.skip("")
     def test_heartrate_paired_channel_setup(self):
         hr = HeartRate(self.node, device_id = 1234, transmission_type = 5678)
 
-        self.assertEqual(Device(1234, 0x78, 5678))
+        device = Device(0x78, 1234, 5678)
+        self.assertEqual(device.number, hr.channel.device.number)
+        self.assertEqual(device.type, hr.channel.device.type)
+        self.assertEqual(device.transmissionType,
+                         hr.channel.device.transmissionType)
+
+    def test_heartrate_receives_channel_broadcast_message(self):
+        hr = HeartRate(self.node)
+
+        self.assertEqual(None, hr.get_last_computed_heart_rate())
+
+        test_data = bytearray(b'\x00' * 8)
+        test_data[7] = b'\x64'
+        hr.channel.process(ChannelBroadcastDataMessage(data=test_data))
+
+        self.assertEqual(100, hr.computed_heart_rate)
+
