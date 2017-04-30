@@ -25,6 +25,7 @@
 ##############################################################################
 
 import unittest
+from fakes import *
 
 from ant.core import event, message
 from ant.core.constants import NETWORK_KEY_ANT_PLUS, CHANNEL_TYPE_TWOWAY_RECEIVE
@@ -32,73 +33,6 @@ from ant.core.node import Network, Node, Channel, Device
 from ant.core.message import ChannelBroadcastDataMessage, ChannelIDMessage, ChannelFrequencyMessage, ChannelAssignMessage, ChannelPeriodMessage, ChannelSearchTimeoutMessage, ChannelOpenMessage
 
 from ant.plus.heartrate import HeartRate
-
-class FakeEventMachine():
-    def __init__(self):
-        self.messages = []
-
-    def writeMessage(self, msg):
-        self.messages.append(msg)
-        return self
-
-    def waitForAck(self, msg):
-        return None
-
-    def registerCallback(self, callback):
-        pass
-
-class FakeChannel(Channel):
-    def __init__(self, node, number=0):
-        super(FakeChannel, self).__init__(node, number)
-
-    def assign(self, network, channelType):
-        self.assigned_network = network
-        self.assigned_channel_type = channelType
-        self.assigned_channel_number = self.number
-        super(FakeChannel, self).assign(network, channelType)
-
-    def open(self):
-        self.open_called = True
-        super(FakeChannel, self).open()
-
-
-class FakeNode(Node):
-    def __init__(self, event_machine):
-        super(FakeNode, self).__init__(None, None)
-
-        # Properties of the real thing
-        self.evm = event_machine
-        self.networks = [None] * 3
-        self.channels = [FakeChannel(self, i) for i in range(0, 8)]
-
-        # Sensing
-        self.network_number = None
-        self.network_key = None
-        self._running = True
-        self.num_channels = 8
-
-    def set_running(self, running):
-        self._running = running
-
-    running = property(lambda self: self._running,
-                       set_running)
-
-    def reset(self):
-        pass
-
-    def start(self):
-        self.running = True
-
-    def stop(self):
-        self.running = False
-
-    def setNetworkKey(self, number, network=None):
-        self.network_number = number
-        self.network_key = network.key
-
-    def use_all_channels(self):
-        for channel in self.channels:
-            channel.network = 1
 
 class HeartRateTest(unittest.TestCase):
     def setUp(self):
