@@ -165,7 +165,7 @@ class HeartRateTest(unittest.TestCase):
 
         # TODO device is the wrong name. The ANT docs refer to this
         # structure as a channel ID
-        pairing_device = Device(0x78, 0, 0)
+        pairing_device = Device(0, 0x78, 0)
         self.assertEqual(pairing_device.number, hr.channel.device.number)
         self.assertEqual(pairing_device.type, hr.channel.device.type)
         self.assertEqual(pairing_device.transmissionType,
@@ -184,7 +184,7 @@ class HeartRateTest(unittest.TestCase):
     def test_heartrate_paired_channel_setup(self):
         hr = HeartRate(self.node, device_id = 1234, transmission_type = 5678)
 
-        device = Device(0x78, 1234, 5678)
+        device = Device(1234, 0x78, 5678)
         self.assertEqual(device.number, hr.channel.device.number)
         self.assertEqual(device.type, hr.channel.device.type)
         self.assertEqual(device.transmissionType,
