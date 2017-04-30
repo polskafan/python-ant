@@ -70,15 +70,15 @@ class HeartRate:
 
         self.channel = self.node.getFreeChannel()
         # todo getFreeChannel() can fail
+        self.channel.registerCallback(_HeartRateEvent(self))
 
-        self.channel.frequency = 0x39
-        self.channel.period = 8070
-        self.channel.searchTime = 30
+        self.channel.assign(public_network, CHANNEL_TYPE_TWOWAY_RECEIVE)
 
         self.channel.setID(0x78, device_id, transmission_type)
 
-        self.channel.registerCallback(_HeartRateEvent(self))
-        self.channel.assign(public_network, CHANNEL_TYPE_TWOWAY_RECEIVE)
+        self.channel.frequency = 0x39
+        self.channel.period = 8070
+        self.channel.searchTimeout = 30
 
         self.channel.open()
 

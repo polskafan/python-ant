@@ -29,48 +29,45 @@ import unittest
 from ant.core import event, message
 from ant.core.constants import NETWORK_KEY_ANT_PLUS, CHANNEL_TYPE_TWOWAY_RECEIVE
 from ant.core.node import Network, Node, Channel, Device
-from ant.core.message import ChannelBroadcastDataMessage
+from ant.core.message import ChannelBroadcastDataMessage, ChannelIDMessage, ChannelFrequencyMessage, ChannelAssignMessage, ChannelPeriodMessage, ChannelSearchTimeoutMessage, ChannelOpenMessage
 
 from ant.plus.heartrate import HeartRate
 
 class FakeEventMachine():
     def __init__(self):
-        pass
+        self.messages = []
 
     def writeMessage(self, msg):
+        self.messages.append(msg)
         return self
 
     def waitForAck(self, msg):
         return None
 
+    def registerCallback(self, callback):
+        pass
+
 class FakeChannel(Channel):
     def __init__(self, node, number=0):
         super(FakeChannel, self).__init__(node, number)
-        self.open_called = False
 
     def assign(self, network, channelType):
         self.assigned_network = network
         self.assigned_channel_type = channelType
         self.assigned_channel_number = self.number
-
-    def setID(self, devType, devNum, transType):
-        self.device = Device(devNum, devType, transType)
+        super(FakeChannel, self).assign(network, channelType)
 
     def open(self):
         self.open_called = True
+        super(FakeChannel, self).open()
 
-    def close(self):
-        pass
-
-    def unassign(self):
-        pass
 
 class FakeNode(Node):
-    def __init__(self):
+    def __init__(self, event_machine):
         super(FakeNode, self).__init__(None, None)
 
         # Properties of the real thing
-        self.evm = FakeEventMachine()
+        self.evm = event_machine
         self.networks = [None] * 3
         self.channels = [FakeChannel(self, i) for i in range(0, 8)]
 
@@ -103,33 +100,10 @@ class FakeNode(Node):
         for channel in self.channels:
             channel.network = 1
 
-    @property
-    def searchTimeout(self):
-        return self._searchTimeout
-
-    @searchTimeout.setter
-    def searchTimeout(self, timeout):
-        self._searchTimeout = timeout
-
-    @property
-    def period(self):
-        return self._period
-
-    @period.setter
-    def period(self, counts):
-        self._period = counts
-
-    @property
-    def frequency(self):
-        return self._frequency
-
-    @frequency.setter
-    def frequency(self, frequency):
-        self._frequency = frequency
-
 class HeartRateTest(unittest.TestCase):
     def setUp(self):
-        self.node = FakeNode()
+        self.event_machine = FakeEventMachine()
+        self.node = FakeNode(self.event_machine)
 
     def test_heartrate_requires_running_node(self):
         self.node.running = False
@@ -161,7 +135,7 @@ class HeartRateTest(unittest.TestCase):
 
         self.assertEqual(0x39, hr.channel.frequency)
         self.assertEqual(8070, hr.channel.period)
-        self.assertEqual(30, hr.channel.searchTime)
+        self.assertEqual(30, hr.channel.searchTimeout)
 
         # TODO device is the wrong name. The ANT docs refer to this
         # structure as a channel ID
@@ -182,9 +156,9 @@ class HeartRateTest(unittest.TestCase):
         self.assertEqual(True, hr.channel.open_called)
 
     def test_heartrate_paired_channel_setup(self):
-        hr = HeartRate(self.node, device_id = 1234, transmission_type = 5678)
+        hr = HeartRate(self.node, device_id = 1234, transmission_type = 2)
 
-        device = Device(1234, 0x78, 5678)
+        device = Device(1234, 0x78, 2)
         self.assertEqual(device.number, hr.channel.device.number)
         self.assertEqual(device.type, hr.channel.device.type)
         self.assertEqual(device.transmissionType,
@@ -200,4 +174,25 @@ class HeartRateTest(unittest.TestCase):
         hr.channel.process(ChannelBroadcastDataMessage(data=test_data))
 
         self.assertEqual(100, hr.computed_heart_rate)
+
+    def test_heartrate_channel_order_of_operations(self):
+        # This test really belongs to the Channel class, but it doesn't
+        # handle this... yet.
+        hr = HeartRate(self.node)
+
+        messages = self.event_machine.messages
+        self.assertEqual(6, len(messages))
+
+        # Assignment must come first (9.5.2.2)
+        self.assertIsInstance(messages[0], ChannelAssignMessage)
+
+        # The rest can come in any order, though setting Channel ID is
+        # typically second in the documentation
+        self.assertIsInstance(messages[1], ChannelIDMessage)
+        self.assertIsInstance(messages[2], ChannelFrequencyMessage)
+        self.assertIsInstance(messages[3], ChannelPeriodMessage)
+        self.assertIsInstance(messages[4], ChannelSearchTimeoutMessage)
+
+        # Open must be last (9.5.4.2)
+        self.assertIsInstance(messages[5], ChannelOpenMessage)
 
