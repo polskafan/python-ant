@@ -55,7 +55,7 @@ class _EventHandler(object):
         if isinstance(msg, ChannelBroadcastDataMessage):
             self.hr._set_data(msg.payload)
 
-            if not self.hr.isPaired or self.hr.detectedDevice is None:
+            if self.hr.detectedDevice is None:
                 # law of demeter violation for now...
                 req_msg = ChannelRequestMessage(messageID=constants.MESSAGE_CHANNEL_ID)
                 self.hr.node.evm.writeMessage(req_msg)
@@ -142,18 +142,14 @@ class HeartRate(object):
 
     @property
     def computed_heart_rate(self):
-        chr = None
+        rate = None
         with self.lock: # necessary? don't think so...
-            chr = self._computed_heart_rate
-        return chr
+            rate = self._computed_heart_rate
+        return rate
 
     @property
     def detectedDevice(self):
         return self._detected_device
-
-    @property
-    def isPaired(self):
-        return self.device_id != 0 or self.transmission_type != 0
 
     @property
     def state(self):
