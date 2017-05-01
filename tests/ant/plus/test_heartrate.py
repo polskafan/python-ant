@@ -30,7 +30,8 @@ from fakes import *
 from ant.core import event, message
 from ant.core.constants import NETWORK_KEY_ANT_PLUS, CHANNEL_TYPE_TWOWAY_RECEIVE
 from ant.core.node import Network, Node, Channel, Device
-from ant.core.message import ChannelBroadcastDataMessage, ChannelIDMessage, ChannelFrequencyMessage, ChannelAssignMessage, ChannelPeriodMessage, ChannelSearchTimeoutMessage, ChannelOpenMessage
+from ant.core.message import ChannelBroadcastDataMessage, ChannelIDMessage, ChannelFrequencyMessage, ChannelAssignMessage, ChannelPeriodMessage, ChannelSearchTimeoutMessage, ChannelOpenMessage, ChannelRequestMessage
+import ant.core.constants as constants
 
 from ant.plus.heartrate import HeartRate
 
@@ -101,7 +102,7 @@ class HeartRateTest(unittest.TestCase):
     def test_heartrate_receives_channel_broadcast_message(self):
         hr = HeartRate(self.node)
 
-        self.assertEqual(None, hr.get_last_computed_heart_rate())
+        self.assertEqual(None, hr.computed_heart_rate)
 
         test_data = bytearray(b'\x00' * 8)
         test_data[7] = b'\x64'
@@ -129,4 +130,17 @@ class HeartRateTest(unittest.TestCase):
 
         # Open must be last (9.5.4.2)
         self.assertIsInstance(messages[5], ChannelOpenMessage)
+
+    def test_unpaired_channel_queries_id(self):
+        hr = HeartRate(self.node)
+
+        # This should be higher level, but Node nor Channel provide it
+
+        test_data = bytearray(b'\x00' * 8)
+        test_data[7] = b'\x64'
+        hr.channel.process(ChannelBroadcastDataMessage(data=test_data))
+
+        messages = self.event_machine.messages
+        self.assertIsInstance(messages[6], ChannelRequestMessage)
+        self.assertEqual(messages[6].messageID, constants.MESSAGE_CHANNEL_ID)
 

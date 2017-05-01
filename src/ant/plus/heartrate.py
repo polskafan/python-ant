@@ -34,7 +34,8 @@ from threading import Lock
 from ant.core.node import Network
 from ant.core.constants import NETWORK_KEY_ANT_PLUS, NETWORK_NUMBER_PUBLIC, CHANNEL_TYPE_TWOWAY_RECEIVE
 from ant.core.event import EventCallback
-from ant.core.message import ChannelBroadcastDataMessage
+from ant.core.message import ChannelBroadcastDataMessage, ChannelRequestMessage
+import ant.core.constants as constants
 
 class _HeartRateEvent(EventCallback):
 
@@ -46,6 +47,10 @@ class _HeartRateEvent(EventCallback):
             self.hr._set_data(msg.payload)
             print("heart rate is {}, channel: {}".format(msg.payload[-1], msg.channelNumber))
 
+            if not self.hr.isPaired():
+                # law of demeter violation for now...
+                self.hr.node.evm.writeMessage(ChannelRequestMessage(messageID = constants.MESSAGE_CHANNEL_ID))
+
 class HeartRate:
 
     def __init__(self, node, device_id=0, transmission_type=0):
@@ -56,6 +61,9 @@ class HeartRate:
         should be created for the identified device.
         """
         self.node = node
+        self.device_id = device_id
+        self.transmission_type = transmission_type
+
         self.lock = Lock()
         self._computed_heart_rate = None
 
@@ -82,9 +90,6 @@ class HeartRate:
 
         self.channel.open()
 
-    def get_last_computed_heart_rate(self):
-        return None
-
     def _set_data(self, data):
         # ChannelMessage prepends the channel number to the message data
         # (Incorrectly IMO)
@@ -105,3 +110,5 @@ class HeartRate:
             chr = self._computed_heart_rate
         return chr
 
+    def isPaired(self):
+        return self.device_id != 0 or self.transmission_type != 0
