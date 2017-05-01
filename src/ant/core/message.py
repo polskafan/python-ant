@@ -22,7 +22,7 @@
 # IN THE SOFTWARE.
 #
 ##############################################################################
-# pylint: disable=missing-docstring,invalid-name
+# pylint: disable=missing-docstring
 
 from __future__ import division, absolute_import, print_function, unicode_literals
 
