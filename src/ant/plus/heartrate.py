@@ -34,7 +34,7 @@ from threading import Lock
 from ant.core.node import Network
 from ant.core.constants import NETWORK_KEY_ANT_PLUS, NETWORK_NUMBER_PUBLIC, CHANNEL_TYPE_TWOWAY_RECEIVE
 from ant.core.event import EventCallback
-from ant.core.message import ChannelBroadcastDataMessage, ChannelRequestMessage
+from ant.core.message import ChannelBroadcastDataMessage, ChannelRequestMessage, ChannelIDMessage
 import ant.core.constants as constants
 
 class _HeartRateEvent(EventCallback):
@@ -51,6 +51,10 @@ class _HeartRateEvent(EventCallback):
                 # law of demeter violation for now...
                 self.hr.node.evm.writeMessage(ChannelRequestMessage(messageID = constants.MESSAGE_CHANNEL_ID))
 
+        elif isinstance(msg, ChannelIDMessage):
+            print("channelID, device number: {}, device type: {}, transmission type: {}".format(msg.deviceNumber, msg.deviceType, msg.transmissionType))
+            self.hr._set_detected_device(msg.deviceNumber, msg.transmissionType)
+
 class HeartRate:
 
     def __init__(self, node, device_id=0, transmission_type=0):
@@ -66,6 +70,7 @@ class HeartRate:
 
         self.lock = Lock()
         self._computed_heart_rate = None
+        self._detected_device = None
 
         if not self.node.running:
             raise Exception('Node must be running')
@@ -103,12 +108,19 @@ class HeartRate:
         with self.lock:
             self._computed_heart_rate = data[COMPUTED_HEART_RATE_INDEX]
 
+    def _set_detected_device(self, device_num, trans_type):
+        self._detected_device = (device_num, trans_type)
+
     @property
     def computed_heart_rate(self):
         chr = None
         with self.lock: # necessary? don't think so...
             chr = self._computed_heart_rate
         return chr
+
+    @property
+    def detectedDevice(self):
+        return self._detected_device
 
     def isPaired(self):
         return self.device_id != 0 or self.transmission_type != 0

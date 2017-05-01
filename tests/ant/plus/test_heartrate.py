@@ -144,3 +144,12 @@ class HeartRateTest(unittest.TestCase):
         self.assertIsInstance(messages[6], ChannelRequestMessage)
         self.assertEqual(messages[6].messageID, constants.MESSAGE_CHANNEL_ID)
 
+    def test_receives_channel_id_message(self):
+        hr = HeartRate(self.node)
+
+        # What should this do if we are connecting to a specific device?
+        self.assertEqual(None, hr.detectedDevice)
+        hr.channel.process(ChannelIDMessage(0, 23358, 120, 1))
+
+        self.assertEqual((23358, 1), hr.detectedDevice)
+
