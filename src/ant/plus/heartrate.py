@@ -47,7 +47,7 @@ class _HeartRateEvent(EventCallback):
             self.hr._set_data(msg.payload)
             print("heart rate is {}, channel: {}".format(msg.payload[-1], msg.channelNumber))
 
-            if not self.hr.isPaired():
+            if not self.hr.isPaired() or self.hr.detectedDevice is None:
                 # law of demeter violation for now...
                 self.hr.node.evm.writeMessage(ChannelRequestMessage(messageID = constants.MESSAGE_CHANNEL_ID))
 

@@ -131,14 +131,16 @@ class HeartRateTest(unittest.TestCase):
         # Open must be last (9.5.4.2)
         self.assertIsInstance(messages[5], ChannelOpenMessage)
 
+    def send_fake_heartrate_msg(self, hr):
+        test_data = bytearray(b'\x00' * 8)
+        test_data[7] = b'\x64'
+        hr.channel.process(ChannelBroadcastDataMessage(data=test_data))
+
     def test_unpaired_channel_queries_id(self):
         hr = HeartRate(self.node)
 
         # This should be higher level, but Node nor Channel provide it
-
-        test_data = bytearray(b'\x00' * 8)
-        test_data[7] = b'\x64'
-        hr.channel.process(ChannelBroadcastDataMessage(data=test_data))
+        self.send_fake_heartrate_msg(hr)
 
         messages = self.event_machine.messages
         self.assertIsInstance(messages[6], ChannelRequestMessage)
@@ -151,5 +153,18 @@ class HeartRateTest(unittest.TestCase):
         self.assertEqual(None, hr.detectedDevice)
         hr.channel.process(ChannelIDMessage(0, 23358, 120, 1))
 
+        self.assertEqual((23358, 1), hr.detectedDevice)
+
+    def test_paired_but_undetected_device_queries_id(self):
+        hr = HeartRate(self.node, 23358, 1)
+
+        self.assertEqual(None, hr.detectedDevice)
+        self.send_fake_heartrate_msg(hr)
+
+        messages = self.event_machine.messages
+        self.assertIsInstance(messages[6], ChannelRequestMessage)
+        self.assertEqual(messages[6].messageID, constants.MESSAGE_CHANNEL_ID)
+
+        hr.channel.process(ChannelIDMessage(0, 23358, 120, 1))
         self.assertEqual((23358, 1), hr.detectedDevice)
 
