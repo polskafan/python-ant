@@ -45,9 +45,8 @@ class _HeartRateEvent(EventCallback):
     def process(self, msg, channel):
         if isinstance(msg, ChannelBroadcastDataMessage):
             self.hr._set_data(msg.payload)
-            print("heart rate is {}, channel: {}".format(msg.payload[-1], msg.channelNumber))
 
-            if not self.hr.isPaired() or self.hr.detectedDevice is None:
+            if not self.hr.isPaired or self.hr.detectedDevice is None:
                 # law of demeter violation for now...
                 self.hr.node.evm.writeMessage(ChannelRequestMessage(messageID = constants.MESSAGE_CHANNEL_ID))
 
@@ -122,5 +121,6 @@ class HeartRate:
     def detectedDevice(self):
         return self._detected_device
 
+    @property
     def isPaired(self):
         return self.device_id != 0 or self.transmission_type != 0

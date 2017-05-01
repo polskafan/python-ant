@@ -16,12 +16,16 @@ antnode = Node(device)
 
 antnode.start()
 
-hr = HeartRate(antnode)
+# Unpaired, search:
+#hr = HeartRate(antnode)
+
+# Paired to a specific device:
+hr = HeartRate(antnode, 23358, 1)
 
 while True:
     try:
         time.sleep(1)
-        print hr.computed_heart_rate
+        print "Computed heart rate: {}".format(hr.computed_heart_rate)
     except KeyboardInterrupt:
         break
 
