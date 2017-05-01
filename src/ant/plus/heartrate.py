@@ -27,17 +27,17 @@
 #
 ##############################################################################
 
-__version__ = 'develop'
+from __future__ import print_function
 
 from threading import Lock
 
 from ant.core.node import Network
-from ant.core.constants import NETWORK_KEY_ANT_PLUS, NETWORK_NUMBER_PUBLIC, CHANNEL_TYPE_TWOWAY_RECEIVE
-from ant.core.event import EventCallback
+from ant.core.constants import NETWORK_KEY_ANT_PLUS, NETWORK_NUMBER_PUBLIC, \
+    CHANNEL_TYPE_TWOWAY_RECEIVE
 from ant.core.message import ChannelBroadcastDataMessage, ChannelRequestMessage, ChannelIDMessage
 import ant.core.constants as constants
 
-class _HeartRateEvent(EventCallback):
+class _HeartRateEvent(object):
 
     def __init__(self, hr):
         self.hr = hr
@@ -48,14 +48,18 @@ class _HeartRateEvent(EventCallback):
 
             if not self.hr.isPaired or self.hr.detectedDevice is None:
                 # law of demeter violation for now...
-                self.hr.node.evm.writeMessage(ChannelRequestMessage(messageID = constants.MESSAGE_CHANNEL_ID))
+                req_msg = ChannelRequestMessage(messageID=constants.MESSAGE_CHANNEL_ID)
+                self.hr.node.evm.writeMessage(req_msg)
 
         elif isinstance(msg, ChannelIDMessage):
-            print("channelID, device number: {}, device type: {}, transmission type: {}".format(msg.deviceNumber, msg.deviceType, msg.transmissionType))
+            m = "channelID, device number: {}, device type: {}, transmission type: {}"
+            print(m.format(msg.deviceNumber, msg.deviceType, msg.transmissionType))
             self.hr._set_detected_device(msg.deviceNumber, msg.transmissionType)
 
-class HeartRate:
+class HeartRate(object):
+    """ANT+ Heart Rate
 
+    """
     def __init__(self, node, device_id=0, transmission_type=0):
         """Open a channel for heart rate data
 
@@ -74,7 +78,7 @@ class HeartRate:
         if not self.node.running:
             raise Exception('Node must be running')
 
-        if len(self.node.networks) == 0:
+        if not self.node.networks:
             raise Exception('Node must have an available network')
 
         public_network = Network(key=NETWORK_KEY_ANT_PLUS, name='N:ANT+')
@@ -97,15 +101,15 @@ class HeartRate:
     def _set_data(self, data):
         # ChannelMessage prepends the channel number to the message data
         # (Incorrectly IMO)
-        DATA_SIZE = 9
-        PAYLOAD_OFFSET = 1
-        COMPUTED_HEART_RATE_INDEX = 7 + PAYLOAD_OFFSET
+        data_size = 9
+        payload_offset = 1
+        computed_heart_rate_index = 7 + payload_offset
 
-        if len(data) != DATA_SIZE:
+        if len(data) != data_size:
             return
 
         with self.lock:
-            self._computed_heart_rate = data[COMPUTED_HEART_RATE_INDEX]
+            self._computed_heart_rate = data[computed_heart_rate_index]
 
     def _set_detected_device(self, device_num, trans_type):
         self._detected_device = (device_num, trans_type)
