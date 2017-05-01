@@ -2,7 +2,7 @@
 """ANT+ Heart Rate Device Profile
 
 """
-
+# pylint: disable=not-context-manager,protected-access
 ##############################################################################
 #
 # Copyright (c) 2017, Matt Hughes
@@ -48,31 +48,33 @@ STATE_RUNNING = 4
 
 class _EventHandler(object):
 
-    def __init__(self, hr):
-        self.hr = hr
+    def __init__(self, heartrate):
+        self.heartrate = heartrate
 
     def process(self, msg, channel):
-        if isinstance(msg, ChannelBroadcastDataMessage):
-            self.hr._set_data(msg.payload)
+        """Handles incoming channel messages
 
-            if self.hr.detectedDevice is None:
+        Converts messages to ANT+ Heart Rate specific data.
+        """
+        if isinstance(msg, ChannelBroadcastDataMessage):
+            self.heartrate._set_data(msg.payload)
+
+            if self.heartrate.detected_device is None:
                 # law of demeter violation for now...
                 req_msg = ChannelRequestMessage(messageID=constants.MESSAGE_CHANNEL_ID)
-                self.hr.node.evm.writeMessage(req_msg)
+                self.heartrate.node.evm.writeMessage(req_msg)
 
         elif isinstance(msg, ChannelIDMessage):
-            m = "channelID, device number: {}, device type: {}, transmission type: {}"
-            print(m.format(msg.deviceNumber, msg.deviceType, msg.transmissionType))
-            self.hr._set_detected_device(msg.deviceNumber, msg.transmissionType)
-            self.hr._set_state(STATE_RUNNING)
+            self.heartrate._set_detected_device(msg.deviceNumber, msg.transmissionType)
+            self.heartrate._set_state(STATE_RUNNING)
 
         elif isinstance(msg, ChannelEventResponseMessage):
             if msg.messageCode == constants.EVENT_CHANNEL_CLOSED:
-                self.hr._set_state(STATE_CLOSED)
+                self.heartrate._set_state(STATE_CLOSED)
             elif msg.messageCode == constants.EVENT_RX_SEARCH_TIMEOUT:
-                self.hr._set_state(STATE_SEARCH_TIMEOUT)
+                self.heartrate._set_state(STATE_SEARCH_TIMEOUT)
             elif msg.messageCode == constants.EVENT_RX_FAIL_GO_TO_SEARCH:
-                self.hr._set_state(STATE_SEARCHING)
+                self.heartrate._set_state(STATE_SEARCHING)
 
 class HeartRate(object):
     """ANT+ Heart Rate
@@ -142,15 +144,29 @@ class HeartRate(object):
 
     @property
     def computed_heart_rate(self):
+        """The computed heart rate calculated by the connected monitor.
+        """
         rate = None
-        with self.lock: # necessary? don't think so...
+        with self.lock:
             rate = self._computed_heart_rate
         return rate
 
     @property
-    def detectedDevice(self):
+    def detected_device(self):
+        """A tuple representing the detected device.
+
+        This is of the form (device_number, transmission_type). This should
+        be accessed when pairing to identify the monitor that is connected.
+        To specifically connect to that monitor in the future, provide the
+        result to the HeartRate constructor:
+
+        HeartRate(node, device_number, transmission_type)
+        """
         return self._detected_device
 
     @property
     def state(self):
+        """Returns the current state of the connection. Only when this is
+        STATE_RUNNING can the data from the monitor be relied upon.
+        """
         return self._state

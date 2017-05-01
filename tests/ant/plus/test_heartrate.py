@@ -150,16 +150,16 @@ class HeartRateTest(unittest.TestCase):
         hr = HeartRate(self.node)
 
         # What should this do if we are connecting to a specific device?
-        self.assertEqual(None, hr.detectedDevice)
+        self.assertEqual(None, hr.detected_device)
         hr.channel.process(ChannelIDMessage(0, 23358, 120, 1))
 
-        self.assertEqual((23358, 1), hr.detectedDevice)
+        self.assertEqual((23358, 1), hr.detected_device)
         self.assertEqual(STATE_RUNNING, hr.state)
 
     def test_paired_but_undetected_device_queries_id(self):
         hr = HeartRate(self.node, 23358, 1)
 
-        self.assertEqual(None, hr.detectedDevice)
+        self.assertEqual(None, hr.detected_device)
         self.send_fake_heartrate_msg(hr)
 
         messages = self.event_machine.messages
@@ -167,7 +167,7 @@ class HeartRateTest(unittest.TestCase):
         self.assertEqual(messages[6].messageID, constants.MESSAGE_CHANNEL_ID)
 
         hr.channel.process(ChannelIDMessage(0, 23358, 120, 1))
-        self.assertEqual((23358, 1), hr.detectedDevice)
+        self.assertEqual((23358, 1), hr.detected_device)
         self.assertEqual(STATE_RUNNING, hr.state)
 
     def test_channel_search_timeout_and_close(self):
