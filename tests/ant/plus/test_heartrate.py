@@ -33,7 +33,7 @@ from ant.core.node import Network, Node, Channel, Device
 from ant.core.message import ChannelBroadcastDataMessage, ChannelIDMessage, ChannelFrequencyMessage, ChannelAssignMessage, ChannelPeriodMessage, ChannelSearchTimeoutMessage, ChannelOpenMessage, ChannelRequestMessage
 import ant.core.constants as constants
 
-from ant.plus.heartrate import HeartRate
+from ant.plus.heartrate import *
 
 class HeartRateTest(unittest.TestCase):
     def setUp(self):
@@ -154,6 +154,7 @@ class HeartRateTest(unittest.TestCase):
         hr.channel.process(ChannelIDMessage(0, 23358, 120, 1))
 
         self.assertEqual((23358, 1), hr.detectedDevice)
+        self.assertEqual(STATE_RUNNING, hr.state)
 
     def test_paired_but_undetected_device_queries_id(self):
         hr = HeartRate(self.node, 23358, 1)
@@ -167,4 +168,41 @@ class HeartRateTest(unittest.TestCase):
 
         hr.channel.process(ChannelIDMessage(0, 23358, 120, 1))
         self.assertEqual((23358, 1), hr.detectedDevice)
+        self.assertEqual(STATE_RUNNING, hr.state)
+
+    def test_channel_search_timeout_and_close(self):
+        hr = HeartRate(self.node)
+
+        self.assertEqual(STATE_SEARCHING, hr.state)
+
+        msg = ChannelEventResponseMessage(0x00,
+                                          constants.MESSAGE_CHANNEL_EVENT,
+                                          constants.EVENT_RX_SEARCH_TIMEOUT)
+        hr.channel.process(msg)
+
+        self.assertEqual(STATE_SEARCH_TIMEOUT, hr.state)
+
+        msg = ChannelEventResponseMessage(0x00,
+                                          constants.MESSAGE_CHANNEL_EVENT,
+                                          constants.EVENT_CHANNEL_CLOSED)
+        hr.channel.process(msg)
+        self.assertEqual(STATE_CLOSED, hr.state)
+
+    def test_channel_rx_fail_over_to_search(self):
+        hr = HeartRate(self.node)
+
+        self.assertEqual(STATE_SEARCHING, hr.state)
+
+        self.send_fake_heartrate_msg(hr)
+        hr.channel.process(ChannelIDMessage(0, 23358, 120, 1))
+
+        self.assertEqual(STATE_RUNNING, hr.state)
+
+        msg = ChannelEventResponseMessage(0x00,
+                                          constants.MESSAGE_CHANNEL_EVENT,
+                                          constants.EVENT_RX_FAIL_GO_TO_SEARCH)
+        hr.channel.process(msg)
+
+        self.assertEqual(STATE_SEARCHING, hr.state)
+
 

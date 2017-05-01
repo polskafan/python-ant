@@ -7,7 +7,7 @@ import time
 
 from ant.core import driver
 from ant.core.node import Node
-from ant.plus.heartrate import HeartRate
+from ant.plus.heartrate import *
 
 from config import *
 
@@ -17,15 +17,20 @@ antnode = Node(device)
 antnode.start()
 
 # Unpaired, search:
-#hr = HeartRate(antnode)
+hr = HeartRate(antnode)
 
 # Paired to a specific device:
-hr = HeartRate(antnode, 23358, 1)
+#hr = HeartRate(antnode, 23359, 1)
+#hr = HeartRate(antnode, 21840, 81)
 
 while True:
     try:
         time.sleep(1)
-        print "Computed heart rate: {}".format(hr.computed_heart_rate)
+        if hr.state == STATE_RUNNING:
+            print "Computed heart rate: {}".format(hr.computed_heart_rate)
+        if hr.state == STATE_CLOSED:
+            print "Channel closed, exiting."
+            break
     except KeyboardInterrupt:
         break
 

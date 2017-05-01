@@ -34,10 +34,19 @@ from threading import Lock
 from ant.core.node import Network
 from ant.core.constants import NETWORK_KEY_ANT_PLUS, NETWORK_NUMBER_PUBLIC, \
     CHANNEL_TYPE_TWOWAY_RECEIVE
-from ant.core.message import ChannelBroadcastDataMessage, ChannelRequestMessage, ChannelIDMessage
+from ant.core.message import ChannelBroadcastDataMessage, ChannelRequestMessage, ChannelIDMessage, \
+    ChannelEventResponseMessage
 import ant.core.constants as constants
 
-class _HeartRateEvent(object):
+# State Machine Parameters
+# TODO replace with PEP 435 enum
+# TODO move most of this to Node or Channel
+STATE_SEARCHING = 1
+STATE_SEARCH_TIMEOUT = 2
+STATE_CLOSED = 3
+STATE_RUNNING = 4
+
+class _EventHandler(object):
 
     def __init__(self, hr):
         self.hr = hr
@@ -55,6 +64,15 @@ class _HeartRateEvent(object):
             m = "channelID, device number: {}, device type: {}, transmission type: {}"
             print(m.format(msg.deviceNumber, msg.deviceType, msg.transmissionType))
             self.hr._set_detected_device(msg.deviceNumber, msg.transmissionType)
+            self.hr._set_state(STATE_RUNNING)
+
+        elif isinstance(msg, ChannelEventResponseMessage):
+            if msg.messageCode == constants.EVENT_CHANNEL_CLOSED:
+                self.hr._set_state(STATE_CLOSED)
+            elif msg.messageCode == constants.EVENT_RX_SEARCH_TIMEOUT:
+                self.hr._set_state(STATE_SEARCH_TIMEOUT)
+            elif msg.messageCode == constants.EVENT_RX_FAIL_GO_TO_SEARCH:
+                self.hr._set_state(STATE_SEARCHING)
 
 class HeartRate(object):
     """ANT+ Heart Rate
@@ -74,6 +92,7 @@ class HeartRate(object):
         self.lock = Lock()
         self._computed_heart_rate = None
         self._detected_device = None
+        self._state = None
 
         if not self.node.running:
             raise Exception('Node must be running')
@@ -86,7 +105,7 @@ class HeartRate(object):
 
         self.channel = self.node.getFreeChannel()
         # todo getFreeChannel() can fail
-        self.channel.registerCallback(_HeartRateEvent(self))
+        self.channel.registerCallback(_EventHandler(self))
 
         self.channel.assign(public_network, CHANNEL_TYPE_TWOWAY_RECEIVE)
 
@@ -94,9 +113,11 @@ class HeartRate(object):
 
         self.channel.frequency = 0x39
         self.channel.period = 8070
-        self.channel.searchTimeout = 30
+        self.channel.searchTimeout = 30 # note, this is not in seconds
 
         self.channel.open()
+
+        self._state = STATE_SEARCHING
 
     def _set_data(self, data):
         # ChannelMessage prepends the channel number to the message data
@@ -112,7 +133,12 @@ class HeartRate(object):
             self._computed_heart_rate = data[computed_heart_rate_index]
 
     def _set_detected_device(self, device_num, trans_type):
-        self._detected_device = (device_num, trans_type)
+        with self.lock:
+            self._detected_device = (device_num, trans_type)
+
+    def _set_state(self, state):
+        with self.lock:
+            self._state = state
 
     @property
     def computed_heart_rate(self):
@@ -128,3 +154,7 @@ class HeartRate(object):
     @property
     def isPaired(self):
         return self.device_id != 0 or self.transmission_type != 0
+
+    @property
+    def state(self):
+        return self._state
