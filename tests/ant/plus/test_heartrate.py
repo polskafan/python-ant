@@ -39,10 +39,15 @@ class HeartRateCallback():
     def __init__(self):
         self.device_number = None
         self.transmission_type = None
+        self.computed_heartrate = None
 
     def device_found(self, device_number, transmission_type):
         self.device_number = device_number
         self.transmission_type = transmission_type
+
+    def heartrate_data(self, computed_heartrate): # rest to come soon
+        self.computed_heartrate = computed_heartrate
+
 
 class HeartRateTest(unittest.TestCase):
     def setUp(self):
@@ -222,3 +227,10 @@ class HeartRateTest(unittest.TestCase):
 
         self.assertEqual(23358, callback.device_number)
         self.assertEqual(1, callback.transmission_type)
+
+    def test_data_callback(self):
+        callback = HeartRateCallback()
+        hr = HeartRate(self.node, callback = callback)
+
+        self.send_fake_heartrate_msg(hr)
+        self.assertEqual(100, callback.computed_heartrate)

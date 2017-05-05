@@ -46,6 +46,29 @@ STATE_SEARCH_TIMEOUT = 2
 STATE_CLOSED = 3
 STATE_RUNNING = 4
 
+class HeartRateCallback(object):
+    """Receives heart rate events.
+    """
+
+    def device_found(self, device_number, transmission_type):
+        """Called when a device is first detected.
+
+        The callback receives the device number and transmission type.
+        When instantiating the HeartRate class, these can be supplied
+        in the device_id and transmission_type keyword parameters to
+        pair with the specific device.
+        """
+        pass
+
+    def heartrate_data(self, computed_heartrate): # rest to come soon
+        """Called when heart rate data is received.
+
+        Currently only computed heart rate is returned.
+        TODO: R-R interval data.
+        """
+        pass
+
+
 class _EventHandler(object):
 
     def __init__(self, heartrate):
@@ -58,6 +81,12 @@ class _EventHandler(object):
         """
         if isinstance(msg, ChannelBroadcastDataMessage):
             self.heartrate._set_data(msg.payload)
+
+            if (self.heartrate.callback):
+                heartrate_data = getattr(self.heartrate.callback, 'heartrate_data', None)
+                if heartrate_data:
+                    heartrate_data(self.heartrate.computed_heart_rate)
+
 
             if self.heartrate.detected_device is None:
                 # law of demeter violation for now...
