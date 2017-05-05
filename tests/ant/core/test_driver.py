@@ -30,6 +30,8 @@ from ant.core.driver import *
 from ant.core.log import *
 from ant.core.message import ChannelAssignMessage
 
+from serial import Serial, SerialException, SerialTimeoutException
+
 dumps = []
 class FakeDriver(Driver):
     def __init__(self, log = None, debug = False):
@@ -147,6 +149,8 @@ class DriverTest(unittest.TestCase):
         self.driver.open()
 
         # Write calls .encode() on it's argument...
+        # It would be better if read and write both worked in terms of
+        # bytearrays.
         msg = ChannelAssignMessage()
         self.driver.write(msg)
 
@@ -156,12 +160,116 @@ class DriverTest(unittest.TestCase):
         global dumps
         self.assertEqual(dumps[0], (msg.encode(), 'WRITE'))
 
+    def test_writing_to_closed_driver_raises_error(self):
+        with self.assertRaises(DriverError):
+            msg = ChannelAssignMessage()
+            self.driver.write(msg)
+
 class USB1DriverTest(unittest.TestCase):
     def setUp(self):
-        pass
+        this = self
+        self.data = bytearray(range(10))
+        self.written_data = []
 
-    def test_something(self):
-        pass
+        def serial_init(self, device, baud):
+            pass
+
+        def serial_is_open(self):
+            return True
+
+        def serial_get_timeout(self):
+            return self._fake_timeout
+
+        def serial_set_timeout(self, timeout):
+            self._fake_timeout = timeout
+
+        def serial_close(self):
+            this.serial_close_called = True
+
+        def serial_read(self, count):
+            data_to_return = this.data[0:count]
+            self.data = this.data[count:]
+            return data_to_return
+
+        def serial_write(self, data):
+            this.written_data.append(data)
+            return len(data)
+
+        def serial_flush(self):
+            this.serial_flush_called = True
+
+        Serial.__init__ = serial_init
+        Serial.isOpen = serial_is_open
+        Serial.timeout = property(serial_get_timeout, serial_set_timeout)
+        Serial.close = serial_close
+        Serial.read = serial_read
+        Serial.write = serial_write
+        Serial.flush = serial_flush
+
+    def test_open(self):
+        driver = USB1Driver('/dev/ttyS0')
+        self.assertEqual(driver._opened, False)
+
+        driver.open()
+
+        self.assertIsNotNone(driver._serial)
+        self.assertEqual(driver._serial.timeout, 0.01)
+        self.assertEqual(driver._opened, True)
+
+    def test_open_raises_driver_error_on_SerialException(self):
+        def serial_init(self, device, baud):
+            raise SerialException
+        Serial.__init__ = serial_init
+
+        driver = USB1Driver('/dev/ttyS0')
+        with self.assertRaises(DriverError):
+            driver.open()
+
+    def test_open_raises_driver_error_when_device_isnt_open(self):
+        def serial_is_open(self):
+            return False
+        Serial.isOpen = serial_is_open
+
+        driver = USB1Driver('/dev/ttyS0')
+        with self.assertRaises(DriverError):
+            driver.open()
+
+    def test_close(self):
+        driver = USB1Driver('/dev/ttyS0')
+        driver.open()
+        driver.close()
+
+        self.assertTrue(self.serial_close_called)
+
+    def test_read(self):
+        driver = USB1Driver('/dev/ttyS0')
+        driver.open()
+        data = driver.read(1)
+
+        self.assertEqual(data[0], 0)
+
+    def test_write(self):
+        driver = USB1Driver('/dev/ttyS0')
+        driver.open()
+
+        msg = ChannelAssignMessage()
+        count = driver.write(msg)
+        self.assertEqual(self.written_data[-1], msg.encode())
+        self.assertTrue(self.serial_flush_called)
+
+    def test_write_raises_DriverError_on_SerialTimeoutException(self):
+        def serial_write(self, data):
+            raise SerialTimeoutException
+
+        Serial.write = serial_write
+
+        driver = USB1Driver('/dev/ttyS0')
+        driver.open()
+
+        msg = ChannelAssignMessage()
+        with self.assertRaises(DriverError):
+            count = driver.write(msg)
+
 
 class USB2DriverTest(unittest.TestCase):
     def setUp(self):
@@ -169,3 +277,9 @@ class USB2DriverTest(unittest.TestCase):
 
     def test_something(self):
         pass
+
+
+
+
+
+
