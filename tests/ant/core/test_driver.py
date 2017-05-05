@@ -28,14 +28,17 @@ import unittest
 
 from ant.core.driver import *
 from ant.core.log import *
+from ant.core.message import ChannelAssignMessage
 
+dumps = []
 class FakeDriver(Driver):
-    def __init__(self, log = None):
-        super(FakeDriver, self).__init__(log = log)
+    def __init__(self, log = None, debug = False):
+        super(FakeDriver, self).__init__(log = log, debug = debug)
         self.open_called = False
         self.close_called = False
         self.is_open = False
         self.data = bytearray(range(10))
+        self.written_data = []
 
     @property
     def _opened(self):
@@ -55,7 +58,12 @@ class FakeDriver(Driver):
         return data_to_return
 
     def _write(self, data):
-        raise NotImplementedError()
+        self.written_data.append(data)
+
+    @staticmethod
+    def _dump(data, title):
+        global dumps
+        dumps.append((data, title))
 
 LOG_OPEN = 0
 LOG_CLOSE = 1
@@ -82,13 +90,16 @@ class FakeLog(LogWriter):
         self.logs.append((LOG_READ,data))
 
     def logWrite(self, data):
-        self.logs.append((LOG_OPEN,data))
+        self.logs.append((LOG_WRITE,data))
 
 
 class DriverTest(unittest.TestCase):
     def setUp(self):
         self.log = FakeLog()
-        self.driver = FakeDriver(log = self.log)
+        self.driver = FakeDriver(log = self.log, debug = True)
+
+        global dumps
+        dumps = []
 
     def test_open_close(self):
         self.driver.open()
@@ -108,6 +119,17 @@ class DriverTest(unittest.TestCase):
         with self.assertRaises(DriverError):
             self.driver.close()
 
+    def test_read(self):
+        self.driver.open()
+        data = self.driver.read(1)
+
+        self.assertEqual(0, data[0])
+        self.assertEqual(self.driver.log.logs[-1][0], LOG_READ)
+        self.assertEqual(self.driver.log.logs[-1][1], data)
+
+        global dumps
+        self.assertEqual(dumps[0], (bytearray([0]), 'READ'))
+
     def test_read_zero_or_less_raises_error(self):
         self.driver.open()
 
@@ -121,14 +143,18 @@ class DriverTest(unittest.TestCase):
         with self.assertRaises(DriverError):
             self.driver.read(1)
 
-    def test_read(self):
+    def test_write(self):
         self.driver.open()
-        data = self.driver.read(1)
 
-        self.assertEqual(0, data[0])
-        self.assertEqual(self.driver.log.logs[-1][0], LOG_READ)
-        self.assertEqual(self.driver.log.logs[-1][1], data)
+        # Write calls .encode() on it's argument...
+        msg = ChannelAssignMessage()
+        self.driver.write(msg)
 
+        self.assertEqual(self.driver.written_data[-1], msg.encode())
+        self.assertEqual(self.driver.log.logs[-1], (LOG_WRITE, str(msg.encode())))
+
+        global dumps
+        self.assertEqual(dumps[0], (msg.encode(), 'WRITE'))
 
 class USB1DriverTest(unittest.TestCase):
     def setUp(self):
