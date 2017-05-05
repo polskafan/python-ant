@@ -68,6 +68,11 @@ class _EventHandler(object):
             self.heartrate._set_detected_device(msg.deviceNumber, msg.transmissionType)
             self.heartrate._set_state(STATE_RUNNING)
 
+            if (self.heartrate.callback):
+                device_found = getattr(self.heartrate.callback, 'device_found', None)
+                if device_found:
+                    device_found(msg.deviceNumber, msg.transmissionType)
+
         elif isinstance(msg, ChannelEventResponseMessage):
             if msg.messageCode == constants.EVENT_CHANNEL_CLOSED:
                 self.heartrate._set_state(STATE_CLOSED)
@@ -80,7 +85,7 @@ class HeartRate(object):
     """ANT+ Heart Rate
 
     """
-    def __init__(self, node, device_id=0, transmission_type=0):
+    def __init__(self, node, device_id=0, transmission_type=0, callback=None):
         """Open a channel for heart rate data
 
         Device pairing is performed by using a device_id and transmission_type
@@ -90,6 +95,7 @@ class HeartRate(object):
         self.node = node
         self.device_id = device_id
         self.transmission_type = transmission_type
+        self.callback = callback
 
         self.lock = Lock()
         self._computed_heart_rate = None

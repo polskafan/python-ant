@@ -35,6 +35,15 @@ import ant.core.constants as constants
 
 from ant.plus.heartrate import *
 
+class HeartRateCallback():
+    def __init__(self):
+        self.device_number = None
+        self.transmission_type = None
+
+    def device_found(self, device_number, transmission_type):
+        self.device_number = device_number
+        self.transmission_type = transmission_type
+
 class HeartRateTest(unittest.TestCase):
     def setUp(self):
         self.event_machine = FakeEventMachine()
@@ -205,4 +214,11 @@ class HeartRateTest(unittest.TestCase):
 
         self.assertEqual(STATE_SEARCHING, hr.state)
 
+    def test_device_detected_callback(self):
+        callback = HeartRateCallback()
+        hr = HeartRate(self.node, callback = callback)
 
+        hr.channel.process(ChannelIDMessage(0, 23358, 120, 1))
+
+        self.assertEqual(23358, callback.device_number)
+        self.assertEqual(1, callback.transmission_type)
