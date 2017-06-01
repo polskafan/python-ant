@@ -74,6 +74,8 @@ class Driver(object):
         if not self.opened:
             raise DriverError("Could not read from device (not open).")
 
+        # TODO handle USBError exception here, probably rethrow as DriverError
+        # timeouts might be handled as raising a DriverTimeoutError
         data = self._read(count)
 
         with self._lock:
@@ -235,4 +237,5 @@ class USB2Driver(Driver):
         return self._epIn.read(count).tostring()
 
     def _write(self, data):
+        # TODO handle USBError here
         return self._epOut.write(data)
