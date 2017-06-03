@@ -126,6 +126,20 @@ class HeartRate(object):
         if not self.node.networks:
             raise Exception('Node must have an available network')
 
+        CHANNEL_FREQUENCY = 0x39
+        CHANNEL_PERIOD = 8070
+        DEVICE_TYPE = 0x78
+        SEARCH_TIMEOUT = 30
+        self.open_channel(CHANNEL_FREQUENCY, CHANNEL_PERIOD, self.transmission_type,
+                          DEVICE_TYPE, self.device_id, SEARCH_TIMEOUT)
+
+        self._event_handler._state = STATE_SEARCHING
+
+
+    def open_channel(self, frequency, period, transmission_type, device_type,
+                     device_number, search_timeout):
+
+        # TODO should not be changing node state
         public_network = Network(key=NETWORK_KEY_ANT_PLUS, name='N:ANT+')
         self.node.setNetworkKey(NETWORK_NUMBER_PUBLIC, public_network)
 
@@ -136,15 +150,13 @@ class HeartRate(object):
 
         self.channel.assign(public_network, CHANNEL_TYPE_TWOWAY_RECEIVE)
 
-        self.channel.setID(0x78, device_id, transmission_type)
+        self.channel.setID(device_type, device_number, transmission_type)
 
-        self.channel.frequency = 0x39
-        self.channel.period = 8070
-        self.channel.searchTimeout = 30 # note, this is not in seconds
+        self.channel.frequency = frequency
+        self.channel.period = period
+        self.channel.searchTimeout = search_timeout # note, this is not in seconds
 
         self.channel.open()
-
-        self._event_handler._state = STATE_SEARCHING
 
     def _set_data(self, data):
         # ChannelMessage prepends the channel number to the message data
