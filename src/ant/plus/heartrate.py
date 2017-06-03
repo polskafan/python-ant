@@ -71,9 +71,44 @@ class HeartRateCallback(object):
 
 class _EventHandler(object):
 
-    def __init__(self, device_profile):
+    def __init__(self, device_profile, node):
         self.device_profile = device_profile
+        self.node = node
         self._state = None
+
+        if not self.node.running:
+            raise Exception('Node must be running')
+
+        # Not sure about this check, because the public network is always 0.
+        if not self.node.networks:
+            raise Exception('Node must have an available network')
+
+    def open_channel(self, frequency, period, transmission_type, device_type,
+                     device_number, search_timeout):
+
+        # TODO should not be changing node state or causing a write to the
+        # device here, since multiple device profiles may be using the same
+        # node.
+        public_network = Network(key=NETWORK_KEY_ANT_PLUS, name='N:ANT+')
+        self.node.setNetworkKey(NETWORK_NUMBER_PUBLIC, public_network)
+
+        self.channel = self.node.getFreeChannel()
+        # todo getFreeChannel() can fail
+        self.channel.registerCallback(self)
+
+        self.channel.assign(public_network, CHANNEL_TYPE_TWOWAY_RECEIVE)
+
+        self.channel.setID(device_type, device_number, transmission_type)
+
+        self.channel.frequency = frequency
+        self.channel.period = period
+        self.channel.searchTimeout = search_timeout # note, this is not in seconds
+
+        self.channel.open()
+
+        self._state = STATE_SEARCHING
+
+
 
     def process(self, msg, channel):
         """Handles incoming channel messages
@@ -84,9 +119,10 @@ class _EventHandler(object):
             self.device_profile._set_data(msg.payload)
 
             if self.device_profile.detected_device is None:
-                # law of demeter violation for now...
                 req_msg = ChannelRequestMessage(messageID=constants.MESSAGE_CHANNEL_ID)
-                self.device_profile.node.evm.writeMessage(req_msg)
+                # law of demeter violation for now... node or channel should provide
+                # for writing messages
+                self.node.evm.writeMessage(req_msg)
 
         elif isinstance(msg, ChannelIDMessage):
             self.device_profile._set_detected_device(msg.deviceNumber, msg.transmissionType)
@@ -100,6 +136,7 @@ class _EventHandler(object):
             elif msg.messageCode == constants.EVENT_RX_FAIL_GO_TO_SEARCH:
                 self._state = STATE_SEARCHING
 
+
 class HeartRate(object):
     """ANT+ Heart Rate
 
@@ -111,52 +148,21 @@ class HeartRate(object):
         of 0. Once a device has been identified for pairing, a new channel
         should be created for the identified device.
         """
-        self.node = node
-        self.device_id = device_id
-        self.transmission_type = transmission_type
+        self._event_handler = _EventHandler(self, node)
+
         self.callback = callback
 
         self.lock = Lock()
         self._computed_heart_rate = None
         self._detected_device = None
 
-        if not self.node.running:
-            raise Exception('Node must be running')
-
-        if not self.node.networks:
-            raise Exception('Node must have an available network')
-
         CHANNEL_FREQUENCY = 0x39
         CHANNEL_PERIOD = 8070
         DEVICE_TYPE = 0x78
         SEARCH_TIMEOUT = 30
-        self.open_channel(CHANNEL_FREQUENCY, CHANNEL_PERIOD, self.transmission_type,
-                          DEVICE_TYPE, self.device_id, SEARCH_TIMEOUT)
+        self._event_handler.open_channel(CHANNEL_FREQUENCY, CHANNEL_PERIOD, transmission_type,
+                          DEVICE_TYPE, device_id, SEARCH_TIMEOUT)
 
-        self._event_handler._state = STATE_SEARCHING
-
-
-    def open_channel(self, frequency, period, transmission_type, device_type,
-                     device_number, search_timeout):
-
-        # TODO should not be changing node state
-        public_network = Network(key=NETWORK_KEY_ANT_PLUS, name='N:ANT+')
-        self.node.setNetworkKey(NETWORK_NUMBER_PUBLIC, public_network)
-
-        self.channel = self.node.getFreeChannel()
-        # todo getFreeChannel() can fail
-        self._event_handler = _EventHandler(self)
-        self.channel.registerCallback(self._event_handler)
-
-        self.channel.assign(public_network, CHANNEL_TYPE_TWOWAY_RECEIVE)
-
-        self.channel.setID(device_type, device_number, transmission_type)
-
-        self.channel.frequency = frequency
-        self.channel.period = period
-        self.channel.searchTimeout = search_timeout # note, this is not in seconds
-
-        self.channel.open()
 
     def _set_data(self, data):
         # ChannelMessage prepends the channel number to the message data
@@ -214,3 +220,9 @@ class HeartRate(object):
         STATE_RUNNING can the data from the monitor be relied upon.
         """
         return self._event_handler._state
+
+    @property
+    def channel(self):
+        """Temporary until refactoring unit tests.
+        """
+        return self._event_handler.channel
