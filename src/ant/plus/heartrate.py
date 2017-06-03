@@ -71,8 +71,9 @@ class HeartRateCallback(object):
 
 class _EventHandler(object):
 
-    def __init__(self, heartrate):
-        self.heartrate = heartrate
+    def __init__(self, device_profile):
+        self.device_profile = device_profile
+        self._state = None
 
     def process(self, msg, channel):
         """Handles incoming channel messages
@@ -80,35 +81,24 @@ class _EventHandler(object):
         Converts messages to ANT+ Heart Rate specific data.
         """
         if isinstance(msg, ChannelBroadcastDataMessage):
-            self.heartrate._set_data(msg.payload)
+            self.device_profile._set_data(msg.payload)
 
-            if (self.heartrate.callback):
-                heartrate_data = getattr(self.heartrate.callback, 'heartrate_data', None)
-                if heartrate_data:
-                    heartrate_data(self.heartrate.computed_heart_rate)
-
-
-            if self.heartrate.detected_device is None:
+            if self.device_profile.detected_device is None:
                 # law of demeter violation for now...
                 req_msg = ChannelRequestMessage(messageID=constants.MESSAGE_CHANNEL_ID)
-                self.heartrate.node.evm.writeMessage(req_msg)
+                self.device_profile.node.evm.writeMessage(req_msg)
 
         elif isinstance(msg, ChannelIDMessage):
-            self.heartrate._set_detected_device(msg.deviceNumber, msg.transmissionType)
-            self.heartrate._set_state(STATE_RUNNING)
-
-            if (self.heartrate.callback):
-                device_found = getattr(self.heartrate.callback, 'device_found', None)
-                if device_found:
-                    device_found(msg.deviceNumber, msg.transmissionType)
+            self.device_profile._set_detected_device(msg.deviceNumber, msg.transmissionType)
+            self._state = STATE_RUNNING
 
         elif isinstance(msg, ChannelEventResponseMessage):
             if msg.messageCode == constants.EVENT_CHANNEL_CLOSED:
-                self.heartrate._set_state(STATE_CLOSED)
+                self._state = STATE_CLOSED
             elif msg.messageCode == constants.EVENT_RX_SEARCH_TIMEOUT:
-                self.heartrate._set_state(STATE_SEARCH_TIMEOUT)
+                self._state = STATE_SEARCH_TIMEOUT
             elif msg.messageCode == constants.EVENT_RX_FAIL_GO_TO_SEARCH:
-                self.heartrate._set_state(STATE_SEARCHING)
+                self._state = STATE_SEARCHING
 
 class HeartRate(object):
     """ANT+ Heart Rate
@@ -129,7 +119,6 @@ class HeartRate(object):
         self.lock = Lock()
         self._computed_heart_rate = None
         self._detected_device = None
-        self._state = None
 
         if not self.node.running:
             raise Exception('Node must be running')
@@ -142,7 +131,8 @@ class HeartRate(object):
 
         self.channel = self.node.getFreeChannel()
         # todo getFreeChannel() can fail
-        self.channel.registerCallback(_EventHandler(self))
+        self._event_handler = _EventHandler(self)
+        self.channel.registerCallback(self._event_handler)
 
         self.channel.assign(public_network, CHANNEL_TYPE_TWOWAY_RECEIVE)
 
@@ -154,7 +144,7 @@ class HeartRate(object):
 
         self.channel.open()
 
-        self._state = STATE_SEARCHING
+        self._event_handler._state = STATE_SEARCHING
 
     def _set_data(self, data):
         # ChannelMessage prepends the channel number to the message data
@@ -169,13 +159,20 @@ class HeartRate(object):
         with self.lock:
             self._computed_heart_rate = data[computed_heart_rate_index]
 
+        if (self.callback):
+            heartrate_data = getattr(self.callback, 'heartrate_data', None)
+            if heartrate_data:
+                heartrate_data(self._computed_heart_rate)
+
     def _set_detected_device(self, device_num, trans_type):
         with self.lock:
             self._detected_device = (device_num, trans_type)
 
-    def _set_state(self, state):
-        with self.lock:
-            self._state = state
+        if (self.callback):
+            device_found = getattr(self.callback, 'device_found', None)
+            if device_found:
+                device_found(device_num, trans_type)
+
 
     @property
     def computed_heart_rate(self):
@@ -204,4 +201,4 @@ class HeartRate(object):
         """Returns the current state of the connection. Only when this is
         STATE_RUNNING can the data from the monitor be relied upon.
         """
-        return self._state
+        return self._event_handler._state
