@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from ant.core import log
 
 # USB1 ANT stick interface. Running `dmesg | tail -n 25` after plugging the
@@ -15,5 +17,5 @@ DEBUG = True
 LOG = log.LogWriter()
 
 # ========== DO NOT CHANGE ANYTHING BELOW THIS LINE ==========
-print "Using log file:", LOG.filename
-print ""
+print("Using log file:", LOG.filename)
+print("")
