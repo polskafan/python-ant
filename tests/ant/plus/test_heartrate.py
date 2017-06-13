@@ -34,7 +34,7 @@ from ant.core.message import ChannelBroadcastDataMessage, ChannelIDMessage, Chan
 import ant.core.constants as constants
 
 from ant.plus.heartrate import *
-
+from ant.plus.plus import *
 
 def send_fake_heartrate_msg(hr):
     test_data = bytearray(b'\x00' * 8)
