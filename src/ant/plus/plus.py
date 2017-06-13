@@ -49,6 +49,7 @@ class _EventHandler(object):
     def __init__(self, device_profile, node):
         self.device_profile = device_profile
         self.node = node
+        self.channel = None
         self._state = None
 
         if not self.node.running:
