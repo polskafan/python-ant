@@ -38,6 +38,7 @@ from ant.plus.plus import *
 
 def send_fake_heartrate_msg(hr):
     test_data = bytearray(b'\x00' * 8)
+    test_data[6] = 23
     test_data[7] = b'\x64'
     hr.channel.process(ChannelBroadcastDataMessage(data=test_data))
 
@@ -52,8 +53,9 @@ class TestHeartRateCallback(HeartRateCallback):
         self.device_number = device_number
         self.transmission_type = transmission_type
 
-    def heartrate_data(self, computed_heartrate): # rest to come soon
+    def heartrate_data(self, computed_heartrate, beat_count): # rest to come soon
         self.computed_heartrate = computed_heartrate
+        self.beat_count = beat_count
 
 
 class HeartRateTest(unittest.TestCase):
@@ -236,3 +238,19 @@ class HeartRateTest(unittest.TestCase):
 
         send_fake_heartrate_msg(hr)
         self.assertEqual(100, callback.computed_heartrate)
+        self.assertEqual(23, callback.beat_count)
+
+    def test_beat_count_wraparound(self):
+        callback = TestHeartRateCallback()
+        hr = HeartRate(self.node, callback = callback)
+
+        test_data = bytearray(b'\x00' * 9)
+        test_data[7] = 255
+
+        hr._set_data(test_data)
+        self.assertEqual(255, callback.beat_count)
+
+        test_data[7] = 3
+        hr._set_data(test_data)
+        self.assertEqual(258, callback.beat_count)
+

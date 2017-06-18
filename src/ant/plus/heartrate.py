@@ -47,7 +47,7 @@ class HeartRateCallback(object):
         """
         pass
 
-    def heartrate_data(self, computed_heartrate): # rest to come soon
+    def heartrate_data(self, computed_heartrate, beat_count): # rest to come soon
         """Called when heart rate data is received.
 
         Currently only computed heart rate is returned.
@@ -73,6 +73,8 @@ class HeartRate(object):
 
         self.lock = Lock()
         self._computed_heart_rate = None
+        self._beat_count = 0
+        self._previous_beat_count = 0
         self._detected_device = None
 
         CHANNEL_FREQUENCY = 0x39
@@ -89,6 +91,7 @@ class HeartRate(object):
         # (Incorrectly IMO)
         data_size = 9
         payload_offset = 1
+        heart_beat_count_index = 6 + payload_offset
         computed_heart_rate_index = 7 + payload_offset
 
         if len(data) != data_size:
@@ -97,10 +100,21 @@ class HeartRate(object):
         with self.lock:
             self._computed_heart_rate = data[computed_heart_rate_index]
 
+            beat_count = data[heart_beat_count_index]
+            difference = 0
+            if self._previous_beat_count > beat_count:
+                correction = beat_count + 256
+                difference = correction - self._previous_beat_count
+            else:
+                difference = beat_count - self._previous_beat_count
+
+            # TODO this will still wrap...
+            self._beat_count += difference
+
         if (self.callback):
             heartrate_data = getattr(self.callback, 'heartrate_data', None)
             if heartrate_data:
-                heartrate_data(self._computed_heart_rate)
+                heartrate_data(self._computed_heart_rate, self._beat_count)
 
     def _set_detected_device(self, device_num, trans_type):
         with self.lock:
