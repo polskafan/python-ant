@@ -76,6 +76,10 @@ class HeartRate(object):
         self._beat_count = 0
         self._previous_beat_count = 0
         self._previous_event_time = 0
+
+        self._page_toggle_observed = False
+        self._page_toggle = None
+
         self._detected_device = None
 
         CHANNEL_FREQUENCY = 0x39
@@ -92,6 +96,9 @@ class HeartRate(object):
         # (Incorrectly IMO)
         data_size = 9
         payload_offset = 1
+        page_index = 0 + payload_offset
+        prev_event_time_lsb_index = 2 + payload_offset
+        prev_event_time_msb_index = 3 + payload_offset
         event_time_lsb_index = 4 + payload_offset
         event_time_msb_index = 5 + payload_offset
         heart_beat_count_index = 6 + payload_offset
@@ -100,8 +107,19 @@ class HeartRate(object):
         if len(data) != data_size:
             return
 
+        rr_interval = 0
         with self.lock:
             self._computed_heart_rate = data[computed_heart_rate_index]
+
+            page = data[page_index] & 0x7f
+            page_toggle = data[page_index] >> 7
+
+            if not self._page_toggle_observed:
+                if self._page_toggle is None:
+                    self._page_toggle = page_toggle
+                else:
+                    if self._page_toggle != page_toggle:
+                        self._page_toggle_observed = True
 
             beat_count = data[heart_beat_count_index]
             difference = 0
@@ -115,13 +133,18 @@ class HeartRate(object):
             # TODO this will still wrap...
             self._beat_count += difference
 
-            event_time = (data[event_time_msb_index] << 8) + (data[event_time_lsb_index])
-            if difference == 1:
-                rr_interval = (event_time - self.previous_event_time) * 1000 / 1024
+            if self._page_toggle_observed and page == 4:
+                prev_event_time = (data[prev_event_time_msb_index] << 8) + (data[prev_event_time_lsb_index])
+                event_time = (data[event_time_msb_index] << 8) + (data[event_time_lsb_index])
+                rr_interval = (event_time - prev_event_time) * 1000 / 1024
             else:
-                rr_interval = 0
+                event_time = (data[event_time_msb_index] << 8) + (data[event_time_lsb_index])
+                if difference == 1:
+                    rr_interval = (event_time - self.previous_event_time) * 1000 / 1024
+                else:
+                    rr_interval = 0
 
-            self.previous_event_time = event_time
+                self.previous_event_time = event_time
 
         if (self.callback):
             heartrate_data = getattr(self.callback, 'heartrate_data', None)

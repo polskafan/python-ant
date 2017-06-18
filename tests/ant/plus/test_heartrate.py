@@ -45,11 +45,9 @@ def send_fake_heartrate_msg(hr):
     hr.channel.process(ChannelBroadcastDataMessage(data=test_data))
 
 
-def create_msg(beat_time, beat_count, computed_hr):
+def create_msg(page_number = 0, page_toggle = 0, page_bytes = bytearray(b'\xff' * 3),
+               beat_time = 2013, beat_count = 131, computed_hr = 0xb4):
     channel_number = 0
-    page_number = 0
-    page_toggle = 0
-    page_bytes = bytearray(b'\xff' * 3)
     msg = bytearray(b'\x00' * 9)
     struct.pack_into("<BBBBBHBB", msg, 0, channel_number,
                      page_number | (page_toggle << 7),
@@ -284,3 +282,20 @@ class HeartRateTest(unittest.TestCase):
         self.assertEqual(131, callback.beat_count)
         self.assertEqual(333, callback.rr_interval_ms)
 
+    def test_page_gt_0_ignored_until_toggle_bit_changes(self):
+        callback = TestHeartRateCallback()
+        hr = HeartRate(self.node, callback = callback)
+
+        page_bytes = bytearray(b'\xff' * 3)
+        struct.pack_into("<BH", page_bytes, 0, 0xff, 1672)
+
+        print("no toggle")
+        hr._set_data(create_msg(page_number = 4, page_toggle = 0,
+                                page_bytes = page_bytes, beat_time = 2013,
+                                beat_count = 131, computed_hr = 0xb4))
+        self.assertEqual(0, callback.rr_interval_ms)
+
+        hr._set_data(create_msg(page_number = 4, page_toggle = 1,
+                                page_bytes = page_bytes, beat_time = 2013,
+                                beat_count = 131, computed_hr = 0xb4))
+        self.assertEqual(333, callback.rr_interval_ms)
