@@ -45,6 +45,20 @@ def send_fake_heartrate_msg(hr):
     hr.channel.process(ChannelBroadcastDataMessage(data=test_data))
 
 
+def create_msg(beat_time, beat_count, computed_hr):
+    channel_number = 0
+    page_number = 0
+    page_toggle = 0
+    page_bytes = bytearray(b'\xff' * 3)
+    msg = bytearray(b'\x00' * 9)
+    struct.pack_into("<BBBBBHBB", msg, 0, channel_number,
+                     page_number | (page_toggle << 7),
+                     page_bytes[0], page_bytes[1], page_bytes[2],
+                     beat_time, beat_count, computed_hr)
+
+    return msg
+
+
 class TestHeartRateCallback(HeartRateCallback):
     def __init__(self):
         self.device_number = None
@@ -259,33 +273,13 @@ class HeartRateTest(unittest.TestCase):
 
 
     def test_consecutive_beat_page_0_r_r_interval(self):
-        channel_number = 0
-        page_number = 0
-        page_toggle = 0
-        page_bytes = bytearray(b'\xff' * 3)
-        beat_time = 1672
-        beat_count = 130
-        computed_hr = 0xb4
-        msg1 = bytearray(b'\x00' * 9)
-        struct.pack_into("<BBBBBHBB", msg1, 0, channel_number, page_number | (page_toggle << 7),
-                           page_bytes[0], page_bytes[1], page_bytes[2],
-                           beat_time, beat_count, computed_hr)
-
-        beat_time = 2013
-        beat_count = 131
-        computed_hr = 0xb4
-        msg2 = bytearray(b'\x00' * 9)
-        struct.pack_into("<BBBBBHBB", msg2, 0, channel_number, page_number | (page_toggle << 7),
-                           page_bytes[0], page_bytes[1], page_bytes[2],
-                           beat_time, beat_count, computed_hr)
-
         callback = TestHeartRateCallback()
         hr = HeartRate(self.node, callback = callback)
 
-        hr._set_data(msg1)
+        hr._set_data(create_msg(beat_time = 1672, beat_count = 130, computed_hr = 0xb4))
         self.assertEqual(130, callback.beat_count)
 
-        hr._set_data(msg2)
+        hr._set_data(create_msg(beat_time = 2013, beat_count = 131, computed_hr = 0xb4))
 
         self.assertEqual(131, callback.beat_count)
         self.assertEqual(333, callback.rr_interval_ms)
