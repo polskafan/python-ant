@@ -282,6 +282,17 @@ class HeartRateTest(unittest.TestCase):
         self.assertEqual(131, callback.beat_count)
         self.assertEqual(333, callback.rr_interval_ms)
 
+
+    def test_consecutive_page_0_r_r_interval_wraparound(self):
+        callback = TestHeartRateCallback()
+        hr = HeartRate(self.node, callback = callback)
+
+        hr._set_data(create_msg(beat_time = 65535, beat_count = 255, computed_hr = 0xb4))
+        hr._set_data(create_msg(beat_time = 341, beat_count = 0, computed_hr = 0xb4))
+
+        self.assertEqual(333, callback.rr_interval_ms)
+
+
     def test_page_gt_0_ignored_until_toggle_bit_changes(self):
         callback = TestHeartRateCallback()
         hr = HeartRate(self.node, callback = callback)

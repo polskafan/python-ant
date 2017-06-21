@@ -90,6 +90,21 @@ class HeartRate(object):
                                          transmission_type, DEVICE_TYPE,
                                          device_id, SEARCH_TIMEOUT)
 
+    def wraparound_difference(self, current, previous, max_value):
+        difference = 0
+
+        if previous > current:
+            correction = current + max_value
+            difference = correction - previous
+        else:
+            difference = current - previous
+
+        return difference
+
+
+    def rr_interval_correction(self, time_difference):
+        return time_difference * 1000 / 1024
+
 
     def _set_data(self, data):
         # ChannelMessage prepends the channel number to the message data
@@ -122,29 +137,27 @@ class HeartRate(object):
                         self._page_toggle_observed = True
 
             beat_count = data[heart_beat_count_index]
-            difference = 0
-            if self._previous_beat_count > beat_count:
-                correction = beat_count + 256
-                difference = correction - self._previous_beat_count
-            else:
-                difference = beat_count - self._previous_beat_count
+            beat_count_difference = self.wraparound_difference(beat_count, self._previous_beat_count, 256)
             self._previous_beat_count = beat_count
 
             # TODO this will still wrap...
-            self._beat_count += difference
+            self._beat_count += beat_count_difference
 
+            time_difference = 0
             if self._page_toggle_observed and page == 4:
                 prev_event_time = (data[prev_event_time_msb_index] << 8) + (data[prev_event_time_lsb_index])
                 event_time = (data[event_time_msb_index] << 8) + (data[event_time_lsb_index])
-                rr_interval = (event_time - prev_event_time) * 1000 / 1024
+                time_difference = self.wraparound_difference(event_time, prev_event_time, 65535)
             else:
                 event_time = (data[event_time_msb_index] << 8) + (data[event_time_lsb_index])
-                if difference == 1:
-                    rr_interval = (event_time - self.previous_event_time) * 1000 / 1024
+                if beat_count_difference == 1:
+                    time_difference = self.wraparound_difference(event_time, self.previous_event_time, 65535)
                 else:
-                    rr_interval = 0
+                    time_difference = 0
 
                 self.previous_event_time = event_time
+
+            rr_interval = self.rr_interval_correction(time_difference)
 
         if (self.callback):
             heartrate_data = getattr(self.callback, 'heartrate_data', None)
