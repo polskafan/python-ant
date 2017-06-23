@@ -290,7 +290,6 @@ class HeartRateTest(unittest.TestCase):
         page_bytes = bytearray(b'\xff' * 3)
         struct.pack_into("<BH", page_bytes, 0, 0xff, 1672)
 
-        print("no toggle")
         hr._set_data(create_msg(page_number = 4, page_toggle = 0,
                                 page_bytes = page_bytes, beat_time = 2013,
                                 beat_count = 131, computed_hr = 0xb4))
@@ -300,3 +299,30 @@ class HeartRateTest(unittest.TestCase):
                                 page_bytes = page_bytes, beat_time = 2013,
                                 beat_count = 131, computed_hr = 0xb4))
         self.assertEqual(333, callback.rr_interval_ms)
+
+    def test_page_2_and_3_return_None_rr_interval(self):
+        callback = TestHeartRateCallback()
+        hr = HeartRate(self.node, callback = callback)
+
+        page_bytes = bytearray(b'\xff' * 3)
+
+        hr._set_data(create_msg(page_number = 2, page_toggle = 0,
+                                page_bytes = page_bytes, beat_time = 2013,
+                                beat_count = 131, computed_hr = 0xb4))
+        self.assertEqual(None, callback.rr_interval_ms)
+
+        hr._set_data(create_msg(page_number = 2, page_toggle = 1,
+                                page_bytes = page_bytes, beat_time = 2014,
+                                beat_count = 132, computed_hr = 0xb4))
+        self.assertEqual(None, callback.rr_interval_ms)
+
+        hr._set_data(create_msg(page_number = 3, page_toggle = 0,
+                                page_bytes = page_bytes, beat_time = 2015,
+                                beat_count = 133, computed_hr = 0xb4))
+        self.assertEqual(None, callback.rr_interval_ms)
+
+        hr._set_data(create_msg(page_number = 3, page_toggle = 1,
+                                page_bytes = page_bytes, beat_time = 2016,
+                                beat_count = 134, computed_hr = 0xb4))
+        self.assertEqual(None, callback.rr_interval_ms)
+
