@@ -67,9 +67,8 @@ class TestHeartRateCallback(HeartRateCallback):
         self.device_number = device_number
         self.transmission_type = transmission_type
 
-    def heartrate_data(self, computed_heartrate, beat_count, rr_interval_ms):
+    def heartrate_data(self, computed_heartrate, rr_interval_ms):
         self.computed_heartrate = computed_heartrate
-        self.beat_count = beat_count
         self.rr_interval_ms = rr_interval_ms
 
 
@@ -253,35 +252,16 @@ class HeartRateTest(unittest.TestCase):
 
         send_fake_heartrate_msg(hr)
         self.assertEqual(100, callback.computed_heartrate)
-        self.assertEqual(23, callback.beat_count)
-
-    def test_beat_count_wraparound(self):
-        callback = TestHeartRateCallback()
-        hr = HeartRate(self.node, callback = callback)
-
-        test_data = bytearray(b'\x00' * 9)
-        test_data[7] = 255
-
-        hr._set_data(test_data)
-        self.assertEqual(255, callback.beat_count)
-
-        test_data[7] = 3
-        hr._set_data(test_data)
-        self.assertEqual(259, callback.beat_count)
-
 
     def test_consecutive_beat_page_0_r_r_interval(self):
         callback = TestHeartRateCallback()
         hr = HeartRate(self.node, callback = callback)
 
         hr._set_data(create_msg(beat_time = 1672, beat_count = 130, computed_hr = 0xb4))
-        self.assertEqual(130, callback.beat_count)
 
         hr._set_data(create_msg(beat_time = 2013, beat_count = 131, computed_hr = 0xb4))
 
-        self.assertEqual(131, callback.beat_count)
         self.assertEqual(333, callback.rr_interval_ms)
-
 
     def test_consecutive_page_0_r_r_interval_wraparound(self):
         callback = TestHeartRateCallback()
@@ -291,7 +271,6 @@ class HeartRateTest(unittest.TestCase):
         hr._set_data(create_msg(beat_time = 341, beat_count = 0, computed_hr = 0xb4))
 
         self.assertEqual(333, callback.rr_interval_ms)
-
 
     def test_page_gt_0_ignored_until_toggle_bit_changes(self):
         callback = TestHeartRateCallback()

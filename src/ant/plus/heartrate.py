@@ -47,7 +47,7 @@ class HeartRateCallback(object):
         """
         pass
 
-    def heartrate_data(self, computed_heartrate, beat_count, rr_interval_ms):
+    def heartrate_data(self, computed_heartrate, rr_interval_ms):
         """Called when heart rate data is received.
 
         Currently only computed heart rate is returned.
@@ -73,7 +73,6 @@ class HeartRate(object):
 
         self.lock = Lock()
         self._computed_heart_rate = None
-        self._beat_count = 0
         self._previous_beat_count = 0
         self._previous_event_time = 0
 
@@ -140,9 +139,6 @@ class HeartRate(object):
             beat_count_difference = self.wraparound_difference(beat_count, self._previous_beat_count, 256)
             self._previous_beat_count = beat_count
 
-            # TODO this will still wrap...
-            self._beat_count += beat_count_difference
-
             time_difference = 0
             if self._page_toggle_observed and page == 4:
                 prev_event_time = (data[prev_event_time_msb_index] << 8) + (data[prev_event_time_lsb_index])
@@ -162,7 +158,7 @@ class HeartRate(object):
         if (self.callback):
             heartrate_data = getattr(self.callback, 'heartrate_data', None)
             if heartrate_data:
-                heartrate_data(self._computed_heart_rate, self._beat_count, rr_interval)
+                heartrate_data(self._computed_heart_rate, rr_interval)
 
     def _set_detected_device(self, device_num, trans_type):
         with self.lock:
