@@ -121,7 +121,7 @@ class HeartRate(object):
         if len(data) != data_size:
             return
 
-        rr_interval = 0
+        rr_interval = None
         with self.lock:
             self._computed_heart_rate = data[computed_heart_rate_index]
 
@@ -149,11 +149,12 @@ class HeartRate(object):
                 if beat_count_difference == 1:
                     time_difference = self.wraparound_difference(event_time, self.previous_event_time, 65535)
                 else:
-                    time_difference = 0
+                    time_difference = None
 
                 self.previous_event_time = event_time
 
-            rr_interval = self.rr_interval_correction(time_difference)
+            if time_difference is not None:
+                rr_interval = self.rr_interval_correction(time_difference)
 
         if (self.callback):
             heartrate_data = getattr(self.callback, 'heartrate_data', None)

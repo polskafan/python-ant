@@ -263,6 +263,17 @@ class HeartRateTest(unittest.TestCase):
 
         self.assertEqual(333, callback.rr_interval_ms)
 
+    def test_non_consecutive_beat_page_0_r_r_interval(self):
+        callback = TestHeartRateCallback()
+        hr = HeartRate(self.node, callback = callback)
+
+        hr._set_data(create_msg(beat_time = 1672, beat_count = 130, computed_hr = 0xb4))
+
+        hr._set_data(create_msg(beat_time = 2013, beat_count = 132, computed_hr = 0xb4))
+
+        self.assertEqual(None, callback.rr_interval_ms)
+
+
     def test_consecutive_page_0_r_r_interval_wraparound(self):
         callback = TestHeartRateCallback()
         hr = HeartRate(self.node, callback = callback)
@@ -283,7 +294,7 @@ class HeartRateTest(unittest.TestCase):
         hr._set_data(create_msg(page_number = 4, page_toggle = 0,
                                 page_bytes = page_bytes, beat_time = 2013,
                                 beat_count = 131, computed_hr = 0xb4))
-        self.assertEqual(0, callback.rr_interval_ms)
+        self.assertEqual(None, callback.rr_interval_ms)
 
         hr._set_data(create_msg(page_number = 4, page_toggle = 1,
                                 page_bytes = page_bytes, beat_time = 2013,
