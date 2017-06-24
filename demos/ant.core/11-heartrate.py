@@ -11,30 +11,36 @@ from ant.plus.heartrate import *
 
 from config import *
 
-device = driver.USB2Driver(log=LOG, debug=DEBUG)
+device = driver.USB2Driver(log=LOG, debug=DEBUG, idProduct=0x1009)
 antnode = Node(device)
 
 antnode.start()
 
+class DemoHeartRateCallback(HeartRateCallback):
+    def __init__(self):
+        pass
+
+    def device_found(self, device_number, transmission_type):
+        print "Detect monitor device number: %d, transmission type: %d" % (device_number, transmission_type)
+
+    def heartrate_data(self, computed_heartrate, rr_interval_ms):
+        if rr_interval_ms is not None:
+            print "Heart rate: %d, rr interval (ms): %d" % (computed_heartrate, rr_interval_ms)
+        else:
+            print "Heart rate: %d" % (computed_heartrate, )
+
+callback = DemoHeartRateCallback()
 # Unpaired, search:
-hr = HeartRate(antnode)
+hr = HeartRate(antnode, callback = callback)
 
 # Paired to a specific device:
-#hr = HeartRate(antnode, 23359, 1)
-#hr = HeartRate(antnode, 21840, 81)
+#hr = HeartRate(antnode, 23359, 1, callback = callback)
+#hr = HeartRate(antnode, 21840, 81, callback = callback)
 
 monitor = None
 while True:
     try:
         time.sleep(1)
-        if hr.state == STATE_RUNNING:
-            print "Computed heart rate: {}".format(hr.computed_heart_rate)
-            if monitor is None:
-                monitor = hr.detected_device
-                print "Detect monitor device number: %d, transmission type: %d" % monitor
-        if hr.state == STATE_CLOSED:
-            print "Channel closed, exiting."
-            break
     except KeyboardInterrupt:
         break
 
