@@ -31,7 +31,7 @@ from __future__ import print_function
 
 from threading import Lock
 
-from plus import _EventHandler
+from ant.plus.plus import _EventHandler
 
 class HeartRateCallback(object):
     """Receives heart rate events.
