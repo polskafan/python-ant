@@ -23,9 +23,9 @@ class DemoHeartRateCallback(HeartRateCallback):
     def device_found(self, device_number, transmission_type):
         print "Detect monitor device number: %d, transmission type: %d" % (device_number, transmission_type)
 
-    def heartrate_data(self, computed_heartrate, rr_interval_ms):
+    def heartrate_data(self, computed_heartrate, event_time_ms, rr_interval_ms):
         if rr_interval_ms is not None:
-            print "Heart rate: %d, rr interval (ms): %d" % (computed_heartrate, rr_interval_ms)
+            print "Heart rate: %d, event time(ms): %d, rr interval (ms): %d" % (computed_heartrate, event_time_ms, rr_interval_ms)
         else:
             print "Heart rate: %d" % (computed_heartrate, )
 
@@ -44,4 +44,5 @@ while True:
     except KeyboardInterrupt:
         break
 
+hr.close()
 antnode.stop()

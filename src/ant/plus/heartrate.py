@@ -47,11 +47,12 @@ class HeartRateCallback(object):
         """
         pass
 
-    def heartrate_data(self, computed_heartrate, rr_interval_ms):
+    def heartrate_data(self, computed_heartrate, event_time_ms, rr_interval_ms):
         """Called when heart rate data is received.
 
-        Currently only computed heart rate is returned.
-        TODO: R-R interval data.
+        computed_heartrate - computed heart rate from monitor
+        event_time_ms - event time in ms
+        rr_interval_ms - time between successive R waves
         """
         pass
 
@@ -125,6 +126,7 @@ class HeartRate(object):
             return
 
         rr_interval = None
+        event_time = None
         with self.lock:
             self._computed_heart_rate = data[computed_heart_rate_index]
 
@@ -147,14 +149,14 @@ class HeartRate(object):
                 prev_event_time = (data[prev_event_time_msb_index] << 8) + (data[prev_event_time_lsb_index])
                 event_time = (data[event_time_msb_index] << 8) + (data[event_time_lsb_index])
                 time_difference = self.wraparound_difference(event_time, prev_event_time, 65535)
-            elif page == 0:
+            else:
                 event_time = (data[event_time_msb_index] << 8) + (data[event_time_lsb_index])
                 if beat_count_difference == 1:
-                    time_difference = self.wraparound_difference(event_time, self.previous_event_time, 65535)
+                    time_difference = self.wraparound_difference(event_time, self._previous_event_time, 65535)
                 else:
                     time_difference = None
 
-                self.previous_event_time = event_time
+                self._previous_event_time = event_time
 
             if time_difference is not None:
                 rr_interval = self.rr_interval_correction(time_difference)
@@ -162,7 +164,9 @@ class HeartRate(object):
         if (self.callback):
             heartrate_data = getattr(self.callback, 'heartrate_data', None)
             if heartrate_data:
-                heartrate_data(self._computed_heart_rate, rr_interval)
+                heartrate_data(self._computed_heart_rate,
+                               event_time,
+                               rr_interval)
 
     def _set_detected_device(self, device_num, trans_type):
         with self.lock:
