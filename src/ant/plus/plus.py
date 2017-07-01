@@ -152,7 +152,10 @@ class _EventHandler(object):
 
         self._state = STATE_SEARCHING
 
-
+    def close_channel(self):
+        # TODO this can raise ChannelError if it can't close.
+        # TODO it can also block indefinitely if it doesn't receive a ChannelEventResponseMessage with the right channel number and message code.
+        self.channel.close()
 
     def process(self, msg, channel):
         """Handles incoming channel messages

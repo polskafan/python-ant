@@ -326,3 +326,10 @@ class HeartRateTest(unittest.TestCase):
                                 beat_count = 134, computed_hr = 0xb4))
         self.assertEqual(None, callback.rr_interval_ms)
 
+    def test_close_calls_close_on_channel(self):
+        callback = TestHeartRateCallback()
+        hr = HeartRate(self.node, callback = callback)
+
+        hr.close()
+        self.assertEqual(True, hr.channel.close_called)
+

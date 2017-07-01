@@ -29,6 +29,7 @@ from ant.core.node import Node, Channel
 class FakeEventMachine():
     def __init__(self):
         self.messages = []
+        self.waited_message = None
 
     def writeMessage(self, msg):
         self.messages.append(msg)
@@ -37,7 +38,13 @@ class FakeEventMachine():
     def waitForAck(self, msg):
         return None
 
+    def waitForMessage(self, class_):
+        return self.waited_message
+
     def registerCallback(self, callback):
+        pass
+
+    def removeCallback(self, callback):
         pass
 
 class FakeChannel(Channel):
@@ -54,6 +61,8 @@ class FakeChannel(Channel):
         self.open_called = True
         super(FakeChannel, self).open()
 
+    def close(self):
+        self.close_called = True
 
 class FakeNode(Node):
     def __init__(self, event_machine):

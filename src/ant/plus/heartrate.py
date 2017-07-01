@@ -89,6 +89,9 @@ class HeartRate(object):
                                          transmission_type, DEVICE_TYPE,
                                          device_id, SEARCH_TIMEOUT)
 
+    def close(self):
+        self._event_handler.close_channel()
+
     def wraparound_difference(self, current, previous, max_value):
         difference = 0
 
