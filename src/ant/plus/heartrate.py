@@ -76,6 +76,7 @@ class HeartRate(object):
         self._computed_heart_rate = None
         self._previous_beat_count = 0
         self._previous_event_time = 0
+        self._accumulated_event_time = 0.0
 
         self._page_toggle_observed = False
         self._page_toggle = None
@@ -105,7 +106,7 @@ class HeartRate(object):
         return difference
 
 
-    def rr_interval_correction(self, time_difference):
+    def event_time_correction(self, time_difference):
         return time_difference * 1000 / 1024
 
 
@@ -156,16 +157,20 @@ class HeartRate(object):
                 else:
                     time_difference = None
 
-                self._previous_event_time = event_time
-
             if time_difference is not None:
-                rr_interval = self.rr_interval_correction(time_difference)
+                rr_interval = self.event_time_correction(time_difference)
+
+            # Update accumulated time
+            event_time = (data[event_time_msb_index] << 8) + (data[event_time_lsb_index])
+            time_difference = self.wraparound_difference(event_time, self._previous_event_time, 65535)
+            self._previous_event_time = event_time
+            self._accumulated_event_time += float(self.event_time_correction(time_difference)) / 1000
 
         if (self.callback):
             heartrate_data = getattr(self.callback, 'heartrate_data', None)
             if heartrate_data:
                 heartrate_data(self._computed_heart_rate,
-                               event_time,
+                               self._accumulated_event_time,
                                rr_interval)
 
     def _set_detected_device(self, device_num, trans_type):

@@ -62,13 +62,16 @@ class TestHeartRateCallback(HeartRateCallback):
         self.device_number = None
         self.transmission_type = None
         self.computed_heartrate = None
+        self.event_time_s = None
+        self.rr_interval_ms = None
 
     def device_found(self, device_number, transmission_type):
         self.device_number = device_number
         self.transmission_type = transmission_type
 
-    def heartrate_data(self, computed_heartrate, rr_interval_ms):
+    def heartrate_data(self, computed_heartrate, event_time_s, rr_interval_ms):
         self.computed_heartrate = computed_heartrate
+        self.event_time_s = event_time_s
         self.rr_interval_ms = rr_interval_ms
 
 
@@ -262,6 +265,7 @@ class HeartRateTest(unittest.TestCase):
         hr._set_data(create_msg(beat_time = 2013, beat_count = 131, computed_hr = 0xb4))
 
         self.assertEqual(333, callback.rr_interval_ms)
+        self.assertAlmostEqual(1.965, callback.event_time_s)
 
     def test_non_consecutive_beat_page_0_r_r_interval(self):
         callback = TestHeartRateCallback()
@@ -272,7 +276,7 @@ class HeartRateTest(unittest.TestCase):
         hr._set_data(create_msg(beat_time = 2013, beat_count = 132, computed_hr = 0xb4))
 
         self.assertEqual(None, callback.rr_interval_ms)
-
+        self.assertEqual(1.9649999999999999, callback.event_time_s)
 
     def test_consecutive_page_0_r_r_interval_wraparound(self):
         callback = TestHeartRateCallback()
@@ -282,6 +286,7 @@ class HeartRateTest(unittest.TestCase):
         hr._set_data(create_msg(beat_time = 341, beat_count = 0, computed_hr = 0xb4))
 
         self.assertEqual(333, callback.rr_interval_ms)
+        self.assertAlmostEqual(64.332, callback.event_time_s)
 
     def test_page_gt_0_ignored_until_toggle_bit_changes(self):
         callback = TestHeartRateCallback()
@@ -299,32 +304,33 @@ class HeartRateTest(unittest.TestCase):
                                 page_bytes = page_bytes, beat_time = 2013,
                                 beat_count = 131, computed_hr = 0xb4))
         self.assertEqual(333, callback.rr_interval_ms)
+        self.assertEqual(1.965, callback.event_time_s)
 
-    def test_page_2_and_3_return_None_rr_interval(self):
+    def test_page_2_and_3_return_consecutive_beat_rr_interval(self):
         callback = TestHeartRateCallback()
         hr = HeartRate(self.node, callback = callback)
 
         page_bytes = bytearray(b'\xff' * 3)
 
         hr._set_data(create_msg(page_number = 2, page_toggle = 0,
-                                page_bytes = page_bytes, beat_time = 2013,
+                                page_bytes = page_bytes, beat_time = 2000,
                                 beat_count = 131, computed_hr = 0xb4))
         self.assertEqual(None, callback.rr_interval_ms)
 
         hr._set_data(create_msg(page_number = 2, page_toggle = 1,
-                                page_bytes = page_bytes, beat_time = 2014,
+                                page_bytes = page_bytes, beat_time = 2500,
                                 beat_count = 132, computed_hr = 0xb4))
-        self.assertEqual(None, callback.rr_interval_ms)
+        self.assertEqual(488, callback.rr_interval_ms)
 
         hr._set_data(create_msg(page_number = 3, page_toggle = 0,
-                                page_bytes = page_bytes, beat_time = 2015,
+                                page_bytes = page_bytes, beat_time = 3000,
                                 beat_count = 133, computed_hr = 0xb4))
-        self.assertEqual(None, callback.rr_interval_ms)
+        self.assertEqual(488, callback.rr_interval_ms)
 
         hr._set_data(create_msg(page_number = 3, page_toggle = 1,
-                                page_bytes = page_bytes, beat_time = 2016,
+                                page_bytes = page_bytes, beat_time = 3500,
                                 beat_count = 134, computed_hr = 0xb4))
-        self.assertEqual(None, callback.rr_interval_ms)
+        self.assertEqual(488, callback.rr_interval_ms)
 
     def test_close_calls_close_on_channel(self):
         callback = TestHeartRateCallback()
