@@ -57,6 +57,16 @@ class HeartRateCallback(object):
         pass
 
 
+def wraparound_difference(current, previous, max_value):
+    if previous > current:
+        correction = current + max_value
+        difference = correction - previous
+    else:
+        difference = current - previous
+
+    return difference
+
+
 class HeartRate(object):
     """ANT+ Heart Rate
 
@@ -90,21 +100,8 @@ class HeartRate(object):
                                          transmission_type, DEVICE_TYPE,
                                          device_id, SEARCH_TIMEOUT)
 
-    def wraparound_difference(self, current, previous, max_value):
-        difference = 0
-
-        if previous > current:
-            correction = current + max_value
-            difference = correction - previous
-        else:
-            difference = current - previous
-
-        return difference
-
-
     def rr_interval_correction(self, time_difference):
         return time_difference * 1000 / 1024
-
 
     def _set_data(self, data):
         # ChannelMessage prepends the channel number to the message data
@@ -137,18 +134,18 @@ class HeartRate(object):
                         self._page_toggle_observed = True
 
             beat_count = data[heart_beat_count_index]
-            beat_count_difference = self.wraparound_difference(beat_count, self._previous_beat_count, 256)
+            beat_count_difference = wraparound_difference(beat_count, self._previous_beat_count, 256)
             self._previous_beat_count = beat_count
 
             time_difference = None
             if self._page_toggle_observed and page == 4:
                 prev_event_time = (data[prev_event_time_msb_index] << 8) + (data[prev_event_time_lsb_index])
                 event_time = (data[event_time_msb_index] << 8) + (data[event_time_lsb_index])
-                time_difference = self.wraparound_difference(event_time, prev_event_time, 65535)
+                time_difference = wraparound_difference(event_time, prev_event_time, 65535)
             elif page == 0:
                 event_time = (data[event_time_msb_index] << 8) + (data[event_time_lsb_index])
                 if beat_count_difference == 1:
-                    time_difference = self.wraparound_difference(event_time, self.previous_event_time, 65535)
+                    time_difference = wraparound_difference(event_time, self.previous_event_time, 65535)
                 else:
                     time_difference = None
 
