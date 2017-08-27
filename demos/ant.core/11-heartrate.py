@@ -21,13 +21,13 @@ class DemoHeartRateCallback(HeartRateCallback):
         pass
 
     def device_found(self, device_number, transmission_type):
-        print "Detect monitor device number: %d, transmission type: %d" % (device_number, transmission_type)
+        print("Detect monitor device number: %d, transmission type: %d" % (device_number, transmission_type))
 
     def heartrate_data(self, computed_heartrate, rr_interval_ms):
         if rr_interval_ms is not None:
-            print "Heart rate: %d, rr interval (ms): %d" % (computed_heartrate, rr_interval_ms)
+            print("Heart rate: %d, rr interval (ms): %d" % (computed_heartrate, rr_interval_ms))
         else:
-            print "Heart rate: %d" % (computed_heartrate, )
+            print("Heart rate: %d" % (computed_heartrate, ))
 
 callback = DemoHeartRateCallback()
 # Unpaired, search:
