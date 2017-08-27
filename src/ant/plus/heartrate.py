@@ -33,6 +33,7 @@ from threading import Lock
 
 from ant.plus.plus import _EventHandler
 
+
 class HeartRateCallback(object):
     """Receives heart rate events.
     """
