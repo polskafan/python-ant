@@ -71,7 +71,7 @@ class HeartRate(object):
     """ANT+ Heart Rate
 
     """
-    def __init__(self, node, device_id=0, transmission_type=0, callback=None):
+    def __init__(self, node, network, device_id=0, transmission_type=0, callback=None):
         """Open a channel for heart rate data
 
         Device pairing is performed by using a device_id and transmission_type
@@ -96,7 +96,7 @@ class HeartRate(object):
         CHANNEL_PERIOD = 8070
         DEVICE_TYPE = 0x78
         SEARCH_TIMEOUT = 30
-        self._event_handler.open_channel(CHANNEL_FREQUENCY, CHANNEL_PERIOD,
+        self._event_handler.open_channel(network, CHANNEL_FREQUENCY, CHANNEL_PERIOD,
                                          transmission_type, DEVICE_TYPE,
                                          device_id, SEARCH_TIMEOUT)
 
@@ -187,7 +187,7 @@ class HeartRate(object):
         To specifically connect to that monitor in the future, provide the
         result to the HeartRate constructor:
 
-        HeartRate(node, device_number, transmission_type)
+        HeartRate(node, network, device_number, transmission_type)
         """
         return self._detected_device
 

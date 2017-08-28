@@ -60,23 +60,13 @@ class _EventHandler(object):
         if not self.node.networks:
             raise Exception('Node must have an available network')
 
-    def open_channel(self, frequency, period, transmission_type, device_type,
+    def open_channel(self, network, frequency, period, transmission_type, device_type,
                      device_number, search_timeout):
-
-        # TODO should not be changing node state or causing a write to the
-        # device here, since multiple device profiles may be using the same
-        # node.
-        public_network = Network(key=NETWORK_KEY_ANT_PLUS, name='N:ANT+')
-        self.node.setNetworkKey(NETWORK_NUMBER_PUBLIC, public_network)
-
         self.channel = self.node.getFreeChannel()
         # todo getFreeChannel() can fail
         self.channel.registerCallback(self)
-
-        self.channel.assign(public_network, CHANNEL_TYPE_TWOWAY_RECEIVE)
-
+        self.channel.assign(network, CHANNEL_TYPE_TWOWAY_RECEIVE)
         self.channel.setID(device_type, device_number, transmission_type)
-
         self.channel.frequency = frequency
         self.channel.period = period
         self.channel.searchTimeout = search_timeout # note, this is not in seconds

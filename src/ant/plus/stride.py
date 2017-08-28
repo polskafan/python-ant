@@ -56,12 +56,13 @@ class StrideCallback(object):
         the device was found is provided.
         """
 
+
 class Stride(object):
     """ANT+ Stride Based and Speed and Distance Monitor
 
     """
 
-    def __init__(self, node, device_id=0, transmission_type=0, callback=None):
+    def __init__(self, node, network, device_id=0, transmission_type=0, callback=None):
         """TODO
 
         """
@@ -85,7 +86,7 @@ class Stride(object):
         CHANNEL_PERIOD = 8134
         DEVICE_TYPE = 0x7c
         SEARCH_TIMEOUT = 30
-        self._event_handler.open_channel(CHANNEL_FREQUENCY, CHANNEL_PERIOD,
+        self._event_handler.open_channel(network, CHANNEL_FREQUENCY, CHANNEL_PERIOD,
                                          transmission_type, DEVICE_TYPE,
                                          device_id, SEARCH_TIMEOUT)
 
@@ -141,9 +142,9 @@ class Stride(object):
         This is of the form (device_number, transmission_type). This should
         be accessed when pairing to identify the monitor that is connected.
         To specifically connect to that monitor in the future, provide the
-        result to the HeartRate constructor:
+        result to the Stride constructor:
 
-        HeartRate(node, device_number, transmission_type)
+        Stride(node, network, device_number, transmission_type)
         """
         return self._detected_device
 
