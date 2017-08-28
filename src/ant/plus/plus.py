@@ -44,6 +44,7 @@ STATE_SEARCH_TIMEOUT = 2
 STATE_CLOSED = 3
 STATE_RUNNING = 4
 
+
 class _EventHandler(object):
 
     def __init__(self, device_profile, node):
@@ -84,8 +85,6 @@ class _EventHandler(object):
 
         self._state = STATE_SEARCHING
 
-
-
     def process(self, msg, channel):
         """Handles incoming channel messages
 
@@ -111,73 +110,3 @@ class _EventHandler(object):
                 self._state = STATE_SEARCH_TIMEOUT
             elif msg.messageCode == constants.EVENT_RX_FAIL_GO_TO_SEARCH:
                 self._state = STATE_SEARCHING
-
-
-class _EventHandler(object):
-
-    def __init__(self, device_profile, node):
-        self.device_profile = device_profile
-        self.node = node
-        self._state = None
-
-        if not self.node.running:
-            raise Exception('Node must be running')
-
-        # Not sure about this check, because the public network is always 0.
-        if not self.node.networks:
-            raise Exception('Node must have an available network')
-
-    def open_channel(self, frequency, period, transmission_type, device_type,
-                     device_number, search_timeout):
-
-        # TODO should not be changing node state or causing a write to the
-        # device here, since multiple device profiles may be using the same
-        # node.
-        public_network = Network(key=NETWORK_KEY_ANT_PLUS, name='N:ANT+')
-        self.node.setNetworkKey(NETWORK_NUMBER_PUBLIC, public_network)
-
-        self.channel = self.node.getFreeChannel()
-        # todo getFreeChannel() can fail
-        self.channel.registerCallback(self)
-
-        self.channel.assign(public_network, CHANNEL_TYPE_TWOWAY_RECEIVE)
-
-        self.channel.setID(device_type, device_number, transmission_type)
-
-        self.channel.frequency = frequency
-        self.channel.period = period
-        self.channel.searchTimeout = search_timeout # note, this is not in seconds
-
-        self.channel.open()
-
-        self._state = STATE_SEARCHING
-
-
-
-    def process(self, msg, channel):
-        """Handles incoming channel messages
-
-        Converts messages to ANT+ Heart Rate specific data.
-        """
-        if isinstance(msg, ChannelBroadcastDataMessage):
-            self.device_profile._set_data(msg.payload)
-
-            if self.device_profile.detected_device is None:
-                req_msg = ChannelRequestMessage(messageID=constants.MESSAGE_CHANNEL_ID)
-                # law of demeter violation for now... node or channel should provide
-                # for writing messages
-                self.node.evm.writeMessage(req_msg)
-
-        elif isinstance(msg, ChannelIDMessage):
-            self.device_profile._set_detected_device(msg.deviceNumber, msg.transmissionType)
-            self._state = STATE_RUNNING
-
-        elif isinstance(msg, ChannelEventResponseMessage):
-            if msg.messageCode == constants.EVENT_CHANNEL_CLOSED:
-                self._state = STATE_CLOSED
-            elif msg.messageCode == constants.EVENT_RX_SEARCH_TIMEOUT:
-                self._state = STATE_SEARCH_TIMEOUT
-            elif msg.messageCode == constants.EVENT_RX_FAIL_GO_TO_SEARCH:
-                self._state = STATE_SEARCHING
-
-
