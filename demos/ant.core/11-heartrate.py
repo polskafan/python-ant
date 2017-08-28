@@ -7,14 +7,16 @@ import time
 
 from ant.core import driver
 from ant.core.node import Node
+from ant.core.constants import NETWORK_KEY_ANT_PLUS, NETWORK_NUMBER_PUBLIC
 from ant.plus.heartrate import *
 
 from config import *
 
 device = driver.USB2Driver(log=LOG, debug=DEBUG, idProduct=0x1009)
 antnode = Node(device)
-
 antnode.start()
+network = Network(key=NETWORK_KEY_ANT_PLUS, name='N:ANT+')
+antnode.setNetworkKey(NETWORK_NUMBER_PUBLIC, network)
 
 class DemoHeartRateCallback(HeartRateCallback):
     def __init__(self):
@@ -31,11 +33,11 @@ class DemoHeartRateCallback(HeartRateCallback):
 
 callback = DemoHeartRateCallback()
 # Unpaired, search:
-hr = HeartRate(antnode, callback = callback)
+hr = HeartRate(antnode, network, callback = callback)
 
 # Paired to a specific device:
-#hr = HeartRate(antnode, 23359, 1, callback = callback)
-#hr = HeartRate(antnode, 21840, 81, callback = callback)
+#hr = HeartRate(antnode, network, 23359, 1, callback = callback)
+#hr = HeartRate(antnode, network, 21840, 81, callback = callback)
 
 monitor = None
 while True:
