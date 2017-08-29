@@ -124,7 +124,7 @@ class HeartRateTest(unittest.TestCase):
         self.assertEqual(True, hr.channel.open_called)
 
     def test_paired_channel_setup(self):
-        hr = HeartRate(self.node, device_id = 1234, transmission_type = 2)
+        hr = HeartRate(self.node, self.network, device_id = 1234, transmission_type = 2)
 
         device = Device(1234, 0x78, 2)
         self.assertEqual(device.number, hr.channel.device.number)
@@ -133,7 +133,7 @@ class HeartRateTest(unittest.TestCase):
                          hr.channel.device.transmissionType)
 
     def test_receives_channel_broadcast_message(self):
-        hr = HeartRate(self.node)
+        hr = HeartRate(self.node, self.network)
 
         self.assertEqual(None, hr.computed_heart_rate)
 
@@ -327,7 +327,7 @@ class HeartRateTest(unittest.TestCase):
 
     def test_close_calls_close_on_channel(self):
         callback = TestHeartRateCallback()
-        hr = HeartRate(self.node, callback = callback)
+        hr = HeartRate(self.node, self.network, callback = callback)
 
         hr.close()
         self.assertEqual(True, hr.channel.close_called)
