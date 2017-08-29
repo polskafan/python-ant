@@ -37,9 +37,10 @@ class StrideTest(unittest.TestCase):
     def setUp(self):
         self.event_machine = FakeEventMachine()
         self.node = FakeNode(self.event_machine)
+		self.network = Network(key=NETWORK_KEY_ANT_PLUS, name='N:ANT+')
 
     def test_default_channel_setup(self):
-        stride = Stride(self.node)
+        stride = Stride(self.node, self.network)
 
         channel = stride._event_handler.channel
 
@@ -55,10 +56,9 @@ class StrideTest(unittest.TestCase):
         self.assertEqual(pairing_device.transmissionType,
                          channel.device.transmissionType)
 
-        public_network = Network(key=NETWORK_KEY_ANT_PLUS, name='N:ANT+')
-        self.assertEqual(public_network.key, channel.assigned_network.key)
-        self.assertEqual(public_network.name, channel.assigned_network.name)
-        self.assertEqual(public_network.number, channel.assigned_network.number)
+        self.assertEqual(self.network.key, channel.assigned_network.key)
+        self.assertEqual(self.network.name, channel.assigned_network.name)
+        self.assertEqual(self.network.number, channel.assigned_network.number)
 
         self.assertEqual(CHANNEL_TYPE_TWOWAY_RECEIVE, channel.assigned_channel_type)
         self.assertEqual(0, channel.assigned_channel_number)
@@ -66,7 +66,7 @@ class StrideTest(unittest.TestCase):
         self.assertEqual(True, channel.open_called)
 
     def test_paired_channel_setup(self):
-        stride = Stride(self.node, device_id = 1234, transmission_type = 2)
+        stride = Stride(self.node, self.network, device_id = 1234, transmission_type = 2)
 
         channel = stride._event_handler.channel
 
@@ -77,7 +77,7 @@ class StrideTest(unittest.TestCase):
                          channel.device.transmissionType)
 
     def test_receives_page_1_channel_broadcast_message(self):
-        stride = Stride(self.node)
+        stride = Stride(self.node, self.network)
 
         self.assertEqual(None, stride.stride_count)
 
@@ -91,7 +91,7 @@ class StrideTest(unittest.TestCase):
         self.assertEqual(20, stride.stride_count)
 
     def test_receives_page_80_channel_broadcast_message(self):
-        stride = Stride(self.node)
+        stride = Stride(self.node, self.network)
 
         self.assertEqual(None, stride.hardware_revision)
         self.assertEqual(None, stride.manufacturer_id)
@@ -115,7 +115,7 @@ class StrideTest(unittest.TestCase):
         self.assertEqual(4614, stride.model_number)
 
     def test_receives_page_81_channel_broadcast_message(self):
-        stride = Stride(self.node)
+        stride = Stride(self.node, self.network)
 
         self.assertEqual(None, stride.software_revision)
         self.assertEqual(None, stride.serial_number)
