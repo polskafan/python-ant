@@ -37,7 +37,7 @@ class StrideTest(unittest.TestCase):
     def setUp(self):
         self.event_machine = FakeEventMachine()
         self.node = FakeNode(self.event_machine)
-		self.network = Network(key=NETWORK_KEY_ANT_PLUS, name='N:ANT+')
+        self.network = Network(key=NETWORK_KEY_ANT_PLUS, name='N:ANT+')
 
     def test_default_channel_setup(self):
         stride = Stride(self.node, self.network)

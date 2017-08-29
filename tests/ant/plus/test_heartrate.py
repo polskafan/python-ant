@@ -76,7 +76,7 @@ class HeartRateTest(unittest.TestCase):
     def setUp(self):
         self.event_machine = FakeEventMachine()
         self.node = FakeNode(self.event_machine)
-		self.network = Network(key=NETWORK_KEY_ANT_PLUS, name='N:ANT+')
+        self.network = Network(key=NETWORK_KEY_ANT_PLUS, name='N:ANT+')
 
     def test_requires_running_node(self):
         self.node.running = False
