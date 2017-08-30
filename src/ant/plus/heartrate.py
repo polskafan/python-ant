@@ -31,7 +31,7 @@ from __future__ import print_function
 
 from threading import Lock
 
-from ant.plus.plus import _EventHandler
+from .plus import _EventHandler
 
 
 class HeartRateCallback(object):

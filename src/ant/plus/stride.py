@@ -32,7 +32,7 @@ from __future__ import print_function
 from threading import Lock
 import struct
 
-from plus import _EventHandler
+from .plus import _EventHandler
 
 
 class StrideCallback(object):
