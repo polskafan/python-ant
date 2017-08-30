@@ -27,7 +27,7 @@
 import unittest
 import struct
 
-from fakes import *
+from .fakes import *
 
 from ant.core import event, message
 from ant.core.constants import NETWORK_KEY_ANT_PLUS, CHANNEL_TYPE_TWOWAY_RECEIVE

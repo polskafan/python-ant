@@ -25,7 +25,7 @@
 ##############################################################################
 
 import unittest
-from fakes import *
+from .fakes import *
 
 from ant.plus.stride import *
 
