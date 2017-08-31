@@ -94,7 +94,7 @@ class Driver(object):
 
         with self._lock:
             if self.debug:
-                self._dump(str(data), 'WRITE')
+                self._dump(data, 'WRITE')
             if self.log:
                 self.log.logWrite(data[0:ret])
         return ret
@@ -108,9 +108,9 @@ class Driver(object):
 
         line, length = 0, 8
         while data:
-            line += length
-            print('%04X' % line, *('%02X' % ord(byte) for byte in data[:length]))
+            print('%04X' % line, *('%02X' % byte for byte in data[:length]))
             data = data[length:]
+            line += length
 
         print()
 
