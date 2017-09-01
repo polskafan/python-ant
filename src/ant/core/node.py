@@ -53,6 +53,10 @@ class ChannelID(object):
         self.type = devType
         self.transmissionType = transmissionType
 
+    def __str__(self):
+        return '(device number = %s, device type = %s, transmission type = %s)' % \
+                (self.number, self.type, self.transmissionType)
+
 
 class Channel(event.EventCallback):
     def __init__(self, node, number=0):
@@ -178,7 +182,7 @@ class Channel(event.EventCallback):
         rawstr = '<channel %d' % self.number
         channelId = self.id
         if channelId is not None:
-            rawstr += ' (0x%.2x)' % channelId
+            rawstr += channelId
         return rawstr + '>'
 
 

@@ -159,8 +159,7 @@ class EventMachine(object):
     def waitForAck(self, msg):
         response = self.ack.waitFor(msg).messageCode
         if response != RESPONSE_NO_ERROR:
-            raise MessageError("bad response code (%.2x)" % response,
-                               internal=(msg, response))
+            raise MessageError("bad response code (%.2x)" % response, internal=(msg, response))
 
     def waitForMessage(self, class_):
         return self.msg.waitFor(class_)
