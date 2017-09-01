@@ -182,7 +182,7 @@ class Channel(event.EventCallback):
         rawstr = '<channel %d' % self.number
         channelId = self.id
         if channelId is not None:
-            rawstr += channelId
+            rawstr += ', ' + str(channelId)
         return rawstr + '>'
 
 
