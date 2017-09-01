@@ -29,7 +29,7 @@ from .fakes import *
 
 from ant.plus.stride import *
 
-from ant.core.node import Network, Node, Channel, Device
+from ant.core.node import Network, Node, Channel, ChannelID
 from ant.core.constants import NETWORK_KEY_ANT_PLUS, CHANNEL_TYPE_TWOWAY_RECEIVE
 from ant.core.message import ChannelBroadcastDataMessage
 
@@ -48,12 +48,10 @@ class StrideTest(unittest.TestCase):
         self.assertEqual(8134, channel.period)
         self.assertEqual(30, channel.searchTimeout)
 
-        # TODO device is the wrong name. The ANT docs refer to this
-        # structure as a channel ID
-        pairing_device = Device(0, 0x7c, 0)
-        self.assertEqual(pairing_device.number, channel.device.number)
-        self.assertEqual(pairing_device.type, channel.device.type)
-        self.assertEqual(pairing_device.transmissionType,
+        pairing_channel = ChannelID(0, 0x7c, 0)
+        self.assertEqual(pairing_channel.number, channel.device.number)
+        self.assertEqual(pairing_channel.type, channel.device.type)
+        self.assertEqual(pairing_channel.transmissionType,
                          channel.device.transmissionType)
 
         self.assertEqual(self.network.key, channel.assigned_network.key)
@@ -70,10 +68,10 @@ class StrideTest(unittest.TestCase):
 
         channel = stride._event_handler.channel
 
-        device = Device(1234, 0x7c, 2)
-        self.assertEqual(device.number, channel.device.number)
-        self.assertEqual(device.type, channel.device.type)
-        self.assertEqual(device.transmissionType,
+        pairing_channel = ChannelID(1234, 0x7c, 2)
+        self.assertEqual(pairing_channel.number, channel.device.number)
+        self.assertEqual(pairing_channel.type, channel.device.type)
+        self.assertEqual(pairing_channel.transmissionType,
                          channel.device.transmissionType)
 
     def test_receives_page_1_channel_broadcast_message(self):

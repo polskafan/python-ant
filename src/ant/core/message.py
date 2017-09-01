@@ -497,8 +497,7 @@ class CapabilitiesMessage(Message):
     @maxChannels.setter
     def maxChannels(self, num):
         if (num > 0xFF) or (num < 0x00):
-            raise MessageError('Could not set max channels ' \
-                                   '(out of range).')
+            raise MessageError('Could not set max channels (out of range).')
         self._payload[0] = num
 
     @property

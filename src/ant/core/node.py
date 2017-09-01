@@ -47,7 +47,7 @@ class Network(object):
         return name if name is not None else self.key
 
 
-class Device(object):
+class ChannelID(object):
     def __init__(self, devNumber, devType, transmissionType):
         self.number = devNumber
         self.type = devType
@@ -63,7 +63,7 @@ class Channel(event.EventCallback):
         self.evmCallbackLock = Lock()
         self.type = CHANNEL_TYPE_TWOWAY_RECEIVE
         self.network = None
-        self.device = None
+        self.id = None
         self._searchTimeout = None
         self._period = None
         self._frequency = None
@@ -85,7 +85,7 @@ class Channel(event.EventCallback):
         except MessageError as err:
             raise ChannelError('%s: could not set ID: %s' % (self, err))
 
-        self.device = Device(devNum, devType, transType)
+        self.id = ChannelID(devNum, devType, transType)
 
     @property
     def searchTimeout(self):
@@ -176,9 +176,9 @@ class Channel(event.EventCallback):
 
     def __str__(self):
         rawstr = '<channel %d' % self.number
-        device = self.device
-        if device is not None:
-            rawstr += ' (0x%.2x)' % device
+        channelId = self.id
+        if channelId is not None:
+            rawstr += ' (0x%.2x)' % channelId
         return rawstr + '>'
 
 

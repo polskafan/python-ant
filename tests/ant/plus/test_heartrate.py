@@ -31,7 +31,7 @@ from .fakes import *
 
 from ant.core import event, message
 from ant.core.constants import NETWORK_KEY_ANT_PLUS, CHANNEL_TYPE_TWOWAY_RECEIVE
-from ant.core.node import Network, Node, Channel, Device
+from ant.core.node import Network, Node, Channel, ChannelID
 from ant.core.message import ChannelBroadcastDataMessage, ChannelIDMessage, ChannelFrequencyMessage, ChannelAssignMessage, ChannelPeriodMessage, ChannelSearchTimeoutMessage, ChannelOpenMessage, ChannelRequestMessage
 import ant.core.constants as constants
 
@@ -106,12 +106,10 @@ class HeartRateTest(unittest.TestCase):
         self.assertEqual(8070, hr.channel.period)
         self.assertEqual(30, hr.channel.searchTimeout)
 
-        # TODO device is the wrong name. The ANT docs refer to this
-        # structure as a channel ID
-        pairing_device = Device(0, 0x78, 0)
-        self.assertEqual(pairing_device.number, hr.channel.device.number)
-        self.assertEqual(pairing_device.type, hr.channel.device.type)
-        self.assertEqual(pairing_device.transmissionType,
+        pairing_channel = ChannelID(0, 0x78, 0)
+        self.assertEqual(pairing_channel.number, hr.channel.device.number)
+        self.assertEqual(pairing_channel.type, hr.channel.device.type)
+        self.assertEqual(pairing_channel.transmissionType,
                          hr.channel.device.transmissionType)
 
         self.assertEqual(self.network.key, hr.channel.assigned_network.key)
@@ -126,10 +124,10 @@ class HeartRateTest(unittest.TestCase):
     def test_paired_channel_setup(self):
         hr = HeartRate(self.node, self.network, device_id = 1234, transmission_type = 2)
 
-        device = Device(1234, 0x78, 2)
-        self.assertEqual(device.number, hr.channel.device.number)
-        self.assertEqual(device.type, hr.channel.device.type)
-        self.assertEqual(device.transmissionType,
+        pairing_channel = ChannelID(1234, 0x78, 2)
+        self.assertEqual(pairing_channel.number, hr.channel.device.number)
+        self.assertEqual(pairing_channel.type, hr.channel.device.type)
+        self.assertEqual(pairing_channel.transmissionType,
                          hr.channel.device.transmissionType)
 
     def test_receives_channel_broadcast_message(self):
