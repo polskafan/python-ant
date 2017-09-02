@@ -29,10 +29,9 @@
 
 from __future__ import print_function
 
-from threading import Lock
 import struct
 
-from .plus import _EventHandler
+from .plus import DeviceProfile
 
 
 class StrideCallback(object):
@@ -57,20 +56,14 @@ class StrideCallback(object):
         """
 
 
-class Stride(object):
-    """ANT+ Stride Based and Speed and Distance Monitor
+class Stride(DeviceProfile):
+    """ANT+ Stride Based and Speed and Distance Monitor"""
 
-    """
+    channelPeriod = 8134
+    deviceType = 0x7c
 
     def __init__(self, node, network, device_id=0, transmission_type=0, callback=None):
-        """TODO
-
-        """
-        self._event_handler = _EventHandler(self, node)
-
-        self.callback = callback
-
-        self.lock = Lock()
+        super(DeviceProfile, self).__init__(node, network, callback)
 
         self._detected_device = None
 
@@ -81,14 +74,6 @@ class Stride(object):
         self._model_number = None
         self._sw_revision = None
         self._serial_number = None
-
-        CHANNEL_FREQUENCY = 0x39
-        CHANNEL_PERIOD = 8134
-        DEVICE_TYPE = 0x7c
-        SEARCH_TIMEOUT = 30
-        self._event_handler.open_channel(network, CHANNEL_FREQUENCY, CHANNEL_PERIOD,
-                                         transmission_type, DEVICE_TYPE,
-                                         device_id, SEARCH_TIMEOUT)
 
     def _set_data(self, data):
         # ChannelMessage prepends the channel number to the message data

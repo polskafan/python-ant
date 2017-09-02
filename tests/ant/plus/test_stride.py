@@ -41,6 +41,7 @@ class StrideTest(unittest.TestCase):
 
     def test_default_channel_setup(self):
         stride = Stride(self.node, self.network)
+        stride.pair()
 
         channel = stride._event_handler.channel
 
@@ -64,7 +65,8 @@ class StrideTest(unittest.TestCase):
         self.assertEqual(True, channel.open_called)
 
     def test_paired_channel_setup(self):
-        stride = Stride(self.node, self.network, device_id = 1234, transmission_type = 2)
+        stride = Stride(self.node, self.network)
+        stride.pair(ChannelID(1234, 0x7c, 2))
 
         channel = stride._event_handler.channel
 
@@ -76,6 +78,7 @@ class StrideTest(unittest.TestCase):
 
     def test_receives_page_1_channel_broadcast_message(self):
         stride = Stride(self.node, self.network)
+        stride.pair()
 
         self.assertEqual(None, stride.stride_count)
 
@@ -90,6 +93,7 @@ class StrideTest(unittest.TestCase):
 
     def test_receives_page_80_channel_broadcast_message(self):
         stride = Stride(self.node, self.network)
+        stride.pair()
 
         self.assertEqual(None, stride.hardware_revision)
         self.assertEqual(None, stride.manufacturer_id)
@@ -114,6 +118,7 @@ class StrideTest(unittest.TestCase):
 
     def test_receives_page_81_channel_broadcast_message(self):
         stride = Stride(self.node, self.network)
+        stride.pair()
 
         self.assertEqual(None, stride.software_revision)
         self.assertEqual(None, stride.serial_number)

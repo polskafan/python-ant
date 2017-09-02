@@ -27,10 +27,9 @@
 #
 ##############################################################################
 
-from threading import Lock
 from struct import Struct
 
-from .plus import _EventHandler
+from .plus import _EventHandler, DeviceProfile
 
 
 POWER_ONLY_PAGE = 0x10
@@ -62,41 +61,26 @@ class BicyclePowerCallback(object):
         pass
 
 
-class BicyclePower(object):
-    """ANT+ Bicycle Power
+class BicyclePower(DeviceProfile):
+    """ANT+ Bicycle Power"""
 
-    """
-    def __init__(self, node, network, device_id=0, transmission_type=0, callback=None):
-        """Open a channel for bicycle power data
+    channelPeriod = 8182
+    deviceType = 0x0B
 
-        Device pairing is performed by using a device_id and transmission_type
-        of 0. Once a device has been identified for pairing, a new channel
-        should be created for the identified device.
-        """
-        self._event_handler = _EventHandler(self, node)
+    def __init__(self, node, network, callback=None):
+        super(DeviceProfile, self).__init__(node, network, callback)
 
-        self.callback = callback
-
-        self.lock = Lock()
         self.eventCount = None
         self.pedalDifferentiation = False  # Whether the device can tell the difference between left and right pedals
         self.pedalContribution = None
         self.accumulatedPower = None
         self.instantaneousPower = None
 
-        self._pageStructs = {
+        self.pageStructs = {
             # These structs define the format of the data in bytes 1 to 7. Byte 0 is the page number.
             POWER_ONLY_PAGE: Struct('<BBBHH'),
             WHEEL_TORQUE_PAGE: Struct('<xxxxxxxxx')  # TODO
         }
-
-        CHANNEL_FREQUENCY = 0x39
-        CHANNEL_PERIOD = 8182
-        DEVICE_TYPE = 0x0B
-        SEARCH_TIMEOUT = 30
-        self._event_handler.open_channel(network, CHANNEL_FREQUENCY, CHANNEL_PERIOD,
-                                         transmission_type, DEVICE_TYPE,
-                                         device_id, SEARCH_TIMEOUT)
 
     def _set_data(self, data):
         # Note: ChannelMessage prepends the channel number to the message data
@@ -104,7 +88,8 @@ class BicyclePower(object):
             return
 
         with self.lock:
-            if data.payload[1] == 0x10:
+            if data.payload[1] == POWER_ONLY_PAGE:
+                time, beatCount, heartRate = self.pageStructs[POWER_ONLY_PAGE].unpack(data[1:7])
                 self.eventCount = data.payload[2]
                 if data.payload[3] == 0xFF:
                     self.pedalContribution = None

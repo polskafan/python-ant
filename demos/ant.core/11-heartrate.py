@@ -6,11 +6,11 @@
 import time
 
 from ant.core import driver
-from ant.core.node import Node
+from ant.core.node import Node, Network
 from ant.core.constants import NETWORK_KEY_ANT_PLUS, NETWORK_NUMBER_PUBLIC
 from ant.plus.heartrate import *
 
-from config import *
+from .config import *
 
 device = driver.USB2Driver(log=LOG, debug=DEBUG, idProduct=0x1009)
 antnode = Node(device)

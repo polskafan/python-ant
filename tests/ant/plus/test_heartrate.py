@@ -86,21 +86,25 @@ class HeartRateTest(unittest.TestCase):
 
         with self.assertRaises(Exception):
             hr = HeartRate(self.node, self.network)
+            hr.pair()
 
     def test_requires_available_network(self):
         self.node.networks = []
 
         with self.assertRaises(Exception):
             hr = HeartRate(self.node, self.network)
+            hr.pair()
 
     def test_requires_free_channel(self):
         self.node.use_all_channels()
 
         with self.assertRaises(Exception):
             hr = HeartRate(self.node, self.network)
+            hr.pair()
 
     def test_default_channel_setup(self):
         hr = HeartRate(self.node, self.network)
+        hr.pair()
 
         self.assertEqual(0x39, hr.channel.frequency)
         self.assertEqual(8070, hr.channel.period)
@@ -122,7 +126,8 @@ class HeartRateTest(unittest.TestCase):
         self.assertEqual(True, hr.channel.open_called)
 
     def test_paired_channel_setup(self):
-        hr = HeartRate(self.node, self.network, device_id = 1234, transmission_type = 2)
+        hr = HeartRate(self.node, self.network)
+        hr.pair(ChannelID(1234, 0x78, 2))
 
         pairing_channel = ChannelID(1234, 0x78, 2)
         self.assertEqual(pairing_channel.number, hr.channel.device.number)
@@ -132,6 +137,7 @@ class HeartRateTest(unittest.TestCase):
 
     def test_receives_channel_broadcast_message(self):
         hr = HeartRate(self.node, self.network)
+        hr.pair()
 
         self.assertEqual(None, hr.computed_heart_rate)
 
@@ -145,6 +151,7 @@ class HeartRateTest(unittest.TestCase):
         # This test really belongs to the Channel class, but it doesn't
         # handle this... yet.
         hr = HeartRate(self.node, self.network)
+        hr.pair()
 
         messages = self.event_machine.messages
         self.assertEqual(6, len(messages))
@@ -164,6 +171,7 @@ class HeartRateTest(unittest.TestCase):
 
     def test_unpaired_channel_queries_id(self):
         hr = HeartRate(self.node, self.network)
+        hr.pair()
 
         # This should be higher level, but Node nor Channel provide it
         send_fake_heartrate_msg(hr)
@@ -174,6 +182,7 @@ class HeartRateTest(unittest.TestCase):
 
     def test_receives_channel_id_message(self):
         hr = HeartRate(self.node, self.network)
+        hr.pair()
 
         # What should this do if we are connecting to a specific device?
         self.assertEqual(None, hr.detected_device)
@@ -184,6 +193,7 @@ class HeartRateTest(unittest.TestCase):
 
     def test_paired_but_undetected_device_queries_id(self):
         hr = HeartRate(self.node, self.network, 23358, 1)
+        hr.pair(ChannelID(23358, 0x78, 1))
 
         self.assertEqual(None, hr.detected_device)
         send_fake_heartrate_msg(hr)
@@ -198,6 +208,7 @@ class HeartRateTest(unittest.TestCase):
 
     def test_channel_search_timeout_and_close(self):
         hr = HeartRate(self.node, self.network)
+        hr.pair()
 
         self.assertEqual(STATE_SEARCHING, hr.state)
 
@@ -216,6 +227,7 @@ class HeartRateTest(unittest.TestCase):
 
     def test_channel_rx_fail_over_to_search(self):
         hr = HeartRate(self.node, self.network)
+        hr.pair()
 
         self.assertEqual(STATE_SEARCHING, hr.state)
 
@@ -234,6 +246,7 @@ class HeartRateTest(unittest.TestCase):
     def test_device_detected_callback(self):
         callback = TestHeartRateCallback()
         hr = HeartRate(self.node, self.network, callback = callback)
+        hr.pair()
 
         hr.channel.process(ChannelIDMessage(0, 23358, 120, 1))
 
@@ -243,6 +256,7 @@ class HeartRateTest(unittest.TestCase):
     def test_data_callback(self):
         callback = TestHeartRateCallback()
         hr = HeartRate(self.node, self.network, callback = callback)
+        hr.pair()
 
         send_fake_heartrate_msg(hr)
         self.assertEqual(100, callback.computed_heartrate)
@@ -250,6 +264,7 @@ class HeartRateTest(unittest.TestCase):
     def test_consecutive_beat_page_0_r_r_interval(self):
         callback = TestHeartRateCallback()
         hr = HeartRate(self.node, self.network, callback = callback)
+        hr.pair()
 
         hr._set_data(create_msg(beat_time = 1672, beat_count = 130, computed_hr = 0xb4))
 
@@ -261,6 +276,7 @@ class HeartRateTest(unittest.TestCase):
     def test_non_consecutive_beat_page_0_r_r_interval(self):
         callback = TestHeartRateCallback()
         hr = HeartRate(self.node, self.network, callback = callback)
+        hr.pair()
 
         hr._set_data(create_msg(beat_time = 1672, beat_count = 130, computed_hr = 0xb4))
 
@@ -272,6 +288,7 @@ class HeartRateTest(unittest.TestCase):
     def test_consecutive_page_0_r_r_interval_wraparound(self):
         callback = TestHeartRateCallback()
         hr = HeartRate(self.node, self.network, callback = callback)
+        hr.pair()
 
         hr._set_data(create_msg(beat_time = 65535, beat_count = 255, computed_hr = 0xb4))
         hr._set_data(create_msg(beat_time = 341, beat_count = 0, computed_hr = 0xb4))
@@ -282,6 +299,7 @@ class HeartRateTest(unittest.TestCase):
     def test_page_gt_0_ignored_until_toggle_bit_changes(self):
         callback = TestHeartRateCallback()
         hr = HeartRate(self.node, self.network, callback = callback)
+        hr.pair()
 
         page_bytes = bytearray(b'\xff' * 3)
         struct.pack_into("<BH", page_bytes, 0, 0xff, 1672)
@@ -300,6 +318,7 @@ class HeartRateTest(unittest.TestCase):
     def test_page_2_and_3_return_consecutive_beat_rr_interval(self):
         callback = TestHeartRateCallback()
         hr = HeartRate(self.node, self.network, callback = callback)
+        hr.pair()
 
         page_bytes = bytearray(b'\xff' * 3)
 
@@ -326,6 +345,7 @@ class HeartRateTest(unittest.TestCase):
     def test_close_calls_close_on_channel(self):
         callback = TestHeartRateCallback()
         hr = HeartRate(self.node, self.network, callback = callback)
+        hr.pair()
 
         hr.close()
         self.assertEqual(True, hr.channel.close_called)

@@ -96,6 +96,8 @@ class Channel(event.EventCallback):
         return self._searchTimeout
     @searchTimeout.setter
     def searchTimeout(self, timeout):
+        if (timeout > 0xFF) or (timeout < 0x00):
+            raise ChannelError('%s: search timeout must be between 0 and 255, was %s', (self, timeout))
         msg = message.ChannelSearchTimeoutMessage(self.number, timeout)
         try:
             self.node.evm.writeMessage(msg).waitForAck(msg)
@@ -155,6 +157,11 @@ class Channel(event.EventCallback):
                 break
 
         evm.removeCallback(self)
+
+    def send(self, msg):
+        """Sends `msg` on this channel."""
+        msg.channelNumber = self.number
+        return self.node.send(msg)
 
     def unassign(self):
         msg = message.ChannelUnassignMessage(number=self.number)
@@ -228,8 +235,12 @@ class Node(object):
         self.reset(wait=False)
         self.evm.stop()
 
+    def send(self, msg):
+        """Sends `msg` to the ANT device"""
+        return self.evm.writeMessage(msg)
+
     def getCapabilities(self):
-        return (len(self.channels), len(self.networks), self.options)
+        return len(self.channels), len(self.networks), self.options
 
     def setNetworkKey(self, number, network=None):
         networks = self.networks
