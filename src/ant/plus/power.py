@@ -53,38 +53,68 @@ class BicyclePower(DeviceProfile):
                 use for each event. In addition to the events supported by `DeviceProfile`,
                 `BicyclePower` also has the following:
                 'onPowerData'
+                'onTorqueAndPedalData'
         """
         super(BicyclePower, self).__init__(node, network, callbacks)
 
         self.eventCount = None
         self.pedalDifferentiation = False  # Whether the device can tell the difference between left and right pedals
-        self.pedalContribution = None
+        self.pedalPowerRatio = None
         self.cadence = None
         self.accumulatedPower = None
         self.instantaneousPower = None
+        self.leftTorque = None
+        self.rightTorque = None
+        self.leftPedalSmoothness = None
+        self.rightPedalSmoothness = None
 
         self.pageStructs = {
             # These structs define the format of the data in bytes 1 to 7. Byte 0 is the page number.
             POWER_ONLY_PAGE: Struct('<xBBBHH'),
-            WHEEL_TORQUE_PAGE: Struct('<xxxxxxxxx')  # TODO
+            WHEEL_TORQUE_PAGE: Struct('<xxxxxxxxx'),  # TODO
+            CRANK_TORQUE_PAGE: Struct('<xxxxxxxxx'),
+            TORQUE_AND_PEDAL_PAGE: Struct('<xBBBBBxx'),
+            CRANK_TORQUE_FREQ_PAGE: Struct('<xxxxxxxxx')
         }
 
     def processData(self, data):
+        page = None
         with self.lock:
-            if data[0] == POWER_ONLY_PAGE:
+            page = data[0]
+            if page == POWER_ONLY_PAGE:
                 self.eventCount, pedalPowerByte, self.cadence,\
-                self.accumulatedPower, self.instantaneousPower = self.pageStructs[POWER_ONLY_PAGE].unpack(data)
+                self.accumulatedPower, self.instantaneousPower\
+                    = self.pageStructs[POWER_ONLY_PAGE].unpack(data)
 
                 if pedalPowerByte == 0xFF:  # Pedal power not used
-                    self.pedalContribution = None
+                    self.pedalPowerRatio = None
                 else:
                     self.pedalDifferentiation = (pedalPowerByte >> 7) == 1
-                    self.pedalContribution = pedalPowerByte & 0x7F
+                    self.pedalPowerRatio = (pedalPowerByte & 0x7F) / 100  # Convert from percent to fraction
 
                 if self.cadence == 0xFF:  # Invalid value
                     self.cadence = None
+            elif page == TORQUE_AND_PEDAL_PAGE:
+                self.eventCount, self.leftTorque, self.rightTorque,\
+                self.leftPedalSmoothness, self.rightPedalSmoothness\
+                    = self.pageStructs[TORQUE_AND_PEDAL_PAGE].unpack(data)
 
-        onPowerData = self.callbacks.get('onPowerData')
-        if onPowerData:
-            onPowerData(self.eventCount, self.pedalDifferentiation, self.pedalContribution,
-                        self.cadence, self.accumulatedPower, self.instantaneousPower)
+                self.leftTorque == convertPercent(self.leftTorque)
+                self.rightTorque == convertPercent(self.rightTorque)
+                self.leftPedalSmoothness == convertPercent(self.leftPedalSmoothness)
+                self.rightPedalSmoothness == convertPercent(self.rightPedalSmoothness)
+
+        if page == POWER_ONLY_PAGE:
+            callback = self.callbacks.get('onPowerData')
+            if callback:
+                callback(self.eventCount, self.pedalDifferentiation, self.pedalPowerRatio,
+                         self.cadence, self.accumulatedPower, self.instantaneousPower)
+        elif page == TORQUE_AND_PEDAL_PAGE:
+            callback = self.callbacks.get('onTorqueAndPedalData')
+            if callback:
+                callback(self.eventCount, self.leftTorque, self.rightTorque,
+                         self.leftPedalSmoothness, self.rightPedalSmoothness)
+
+# Used by Torque Effectiveness and Pedal Smoothness page. Assumes value is in 1/2% increments.
+def convertPercent(value):
+    return None if value == 0xFF else (value / 200)
