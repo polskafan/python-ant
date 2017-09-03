@@ -90,7 +90,7 @@ class DeviceProfile(object):
         self.channel.setID(deviceType, deviceNumber, transmissionType)
         self.channel.frequency = self.channelFrequency
         self.channel.period = self.channelPeriod
-        self.channel.searchTimeout = searchTimeout // 2.5  # ANT spec says each count is equivalent to 2.5 seconds.
+        self.channel.searchTimeout = int(searchTimeout / 2.5)  # ANT spec says each count is equivalent to 2.5 seconds.
 
         self.channel.open()
         self.state = ChannelState.SEARCHING
