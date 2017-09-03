@@ -71,7 +71,7 @@ class BicyclePower(DeviceProfile):
 
     def processData(self, data):
         with self.lock:
-            if data.payload[0] == POWER_ONLY_PAGE:
+            if data[0] == POWER_ONLY_PAGE:
                 self.eventCount, pedalPowerByte, self.cadence,\
                 self.accumulatedPower, self.instantaneousPower = self.pageStructs[POWER_ONLY_PAGE].unpack(data)
 
