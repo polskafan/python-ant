@@ -29,79 +29,19 @@
 
 from __future__ import print_function
 from threading import Lock
+from enum import Enum
 
-from ant.core.constants import CHANNEL_TYPE_TWOWAY_RECEIVE
+from ant.core.constants import *
 from ant.core.message import ChannelBroadcastDataMessage, ChannelRequestMessage, ChannelIDMessage, \
     ChannelEventResponseMessage
-import ant.core.constants as constants
-
-# State Machine Parameters
-# TODO replace with PEP 435 enum
-# TODO move most of this to Node or Channel
-STATE_SEARCHING = 1
-STATE_SEARCH_TIMEOUT = 2
-STATE_CLOSED = 3
-STATE_RUNNING = 4
+from ant.core.node import ChannelID
 
 
-class _EventHandler(object):
-
-    def __init__(self, device_profile, node):
-        self.device_profile = device_profile
-        self.node = node
-        self.channel = None
-        self._state = None
-
-        if not self.node.running:
-            raise Exception('Node must be running')
-
-        # Not sure about this check, because the public network is always 0.
-        if not self.node.networks:
-            raise Exception('Node must have an available network')
-
-    def open_channel(self, network, frequency, period, transmission_type, device_type,
-                     device_number, search_timeout):
-        self.channel = self.node.getFreeChannel()
-        # todo getFreeChannel() can fail
-        self.channel.registerCallback(self)
-        self.channel.assign(network, CHANNEL_TYPE_TWOWAY_RECEIVE)
-        self.channel.setID(device_type, device_number, transmission_type)
-        self.channel.frequency = frequency
-        self.channel.period = period
-        self.channel.searchTimeout = search_timeout / 2.5  # ANT spec says each count is equivalent to 2.5 seconds.
-
-        self.channel.open()
-
-        self._state = STATE_SEARCHING
-
-    def close_channel(self):
-        # TODO this can raise ChannelError if it can't close.
-        # TODO it can also block indefinitely if it doesn't receive a ChannelEventResponseMessage with the right channel number and message code.
-        self.channel.close()
-
-    def process(self, msg, channel):
-        """Handles incoming channel messages
-
-        Converts messages to ANT+ Heart Rate specific data.
-        """
-        if isinstance(msg, ChannelBroadcastDataMessage):
-            self.device_profile._set_data(msg.payload)
-
-            if self.device_profile.detected_device is None:
-                req_msg = ChannelRequestMessage(messageID=constants.MESSAGE_CHANNEL_ID)
-                self.node.send(req_msg)
-
-        elif isinstance(msg, ChannelIDMessage):
-            self.device_profile._set_detected_device(msg.deviceNumber, msg.transmissionType)
-            self._state = STATE_RUNNING
-
-        elif isinstance(msg, ChannelEventResponseMessage):
-            if msg.messageCode == constants.EVENT_CHANNEL_CLOSED:
-                self._state = STATE_CLOSED
-            elif msg.messageCode == constants.EVENT_RX_SEARCH_TIMEOUT:
-                self._state = STATE_SEARCH_TIMEOUT
-            elif msg.messageCode == constants.EVENT_RX_FAIL_GO_TO_SEARCH:
-                self._state = STATE_SEARCHING
+class ChannelState(Enum):
+    SEARCHING = 1
+    SEARCH_TIMEOUT = 2
+    OPEN = 3
+    CLOSED = 4
 
 
 class DeviceProfile(object):
@@ -111,24 +51,34 @@ class DeviceProfile(object):
     deviceType = 0      # Subclasses should override
     name = 'Ant Device'
 
-    def __init__(self, node, network, callback=None):
-        # onDeviceDetected
-        # onSearchTimeout
-        # onData
+    def __init__(self, node, network, callbacks=None):
+        """
+        :param node: The ANT node to use
+        :param network: The ANT network to connect on
+        :param callbacks: Dictionary of string-function pairs specifying the callbacks to
+                use for each event. Events supported by `DeviceProfile` are:
+                'onDevicePaired'
+                'onSearchTimeout'
+                'onChannelClosed'
+        """
         self.node = node
         self.network = network
-        self.callback = callback
+        self.callbacks = callbacks if callbacks is not None else {}
         self.channel = None
         self.lock = Lock()
+        self.state = ChannelState.CLOSED
+        self._detected = False
 
     def pair(self, channelId=None, searchTimeout=30):
         """Pairs with a device and opens a channel for communicating.
+        Once pairing has completed and the first data message has been recieved, the onDevicePaired
+        callback will be called with the full channel ID.
+        If a device is not found within `searchTimeout`, the onSearchTimeout callback will be called.
 
         :param channelId: The unique ID for each device link in a network.
                 Set to None to find any device of this type. Set to an instance of
                 `ant.node.ChannelID` to pair with a specific device.
-        :param searchTimeout: Time to allow for searching, in seconds. If a device is
-                not found within this time, an error will be raised.
+        :param searchTimeout: Time to allow for searching, in seconds.
         """
         deviceNumber = 0 if channelId is None else channelId.number
         deviceType = self.deviceType if channelId is None else channelId.type
@@ -143,6 +93,7 @@ class DeviceProfile(object):
         self.channel.searchTimeout = searchTimeout // 2.5  # ANT spec says each count is equivalent to 2.5 seconds.
 
         self.channel.open()
+        self.state = ChannelState.SEARCHING
 
     def close(self):
         self.channel.close()
@@ -155,29 +106,40 @@ class DeviceProfile(object):
             difference = current - previous
         return difference
 
-    def _set_data(self, data):
-        pass
-
     def process(self, msg, channel):
         """Handles incoming channel messages
-
         Converts messages to ANT+ device specific data.
         """
         if isinstance(msg, ChannelBroadcastDataMessage):
-            self._set_data(msg.payload)
+            self.processData(msg.payload[1:])  # First byte of payload is the channel number
 
-            if self.detected_device is None:
-                req_msg = ChannelRequestMessage(messageID=constants.MESSAGE_CHANNEL_ID)
+            if not self._detected:
+                req_msg = ChannelRequestMessage(messageID=MESSAGE_CHANNEL_ID)
                 self.node.send(req_msg)
+                self._detected = True
 
         elif isinstance(msg, ChannelIDMessage):
-            self._set_detected_device(msg.deviceNumber, msg.transmissionType)
-            self._state = STATE_RUNNING
+            self.state = ChannelState.OPEN
+            onDevicePaired = self.callbacks.get('onDevicePaired')
+            if onDevicePaired:
+                onDevicePaired(ChannelID(msg.deviceNumber, msg.deviceType, msg.transmissionType))
 
         elif isinstance(msg, ChannelEventResponseMessage):
-            if msg.messageCode == constants.EVENT_CHANNEL_CLOSED:
-                self._state = STATE_CLOSED
-            elif msg.messageCode == constants.EVENT_RX_SEARCH_TIMEOUT:
-                self._state = STATE_SEARCH_TIMEOUT
-            elif msg.messageCode == constants.EVENT_RX_FAIL_GO_TO_SEARCH:
-                self._state = STATE_SEARCHING
+            if msg.messageCode == EVENT_CHANNEL_CLOSED:
+                self.state = ChannelState.CLOSED
+                onChannelClosed = self.callbacks.get('onChannelClosed')
+                if onChannelClosed:
+                    onChannelClosed(self)
+            elif msg.messageCode == EVENT_RX_SEARCH_TIMEOUT:
+                self.state = ChannelState.SEARCH_TIMEOUT
+                onSearchTimeout = self.callbacks.get('onSearchTimeout')
+                if onSearchTimeout:
+                    onSearchTimeout(self)
+            elif msg.messageCode == EVENT_RX_FAIL_GO_TO_SEARCH:
+                self.state = ChannelState.SEARCHING
+
+    def processData(self, data):
+        """Handles broadcast data messages.
+        Subclasses should override to process data specific to the device profile.
+        """
+        pass
