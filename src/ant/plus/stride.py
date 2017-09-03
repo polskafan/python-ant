@@ -63,7 +63,7 @@ class Stride(DeviceProfile):
     deviceType = 0x7c
 
     def __init__(self, node, network, device_id=0, transmission_type=0, callback=None):
-        super(DeviceProfile, self).__init__(node, network, callback)
+        super(Stride, self).__init__(node, network, callback)
 
         self._detected_device = None
 

@@ -54,7 +54,7 @@ class BicyclePower(DeviceProfile):
                 `BicyclePower` also has the following:
                 'onPowerData'
         """
-        super(DeviceProfile, self).__init__(node, network, callbacks)
+        super(BicyclePower, self).__init__(node, network, callbacks)
 
         self.eventCount = None
         self.pedalDifferentiation = False  # Whether the device can tell the difference between left and right pedals
