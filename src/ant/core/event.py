@@ -64,7 +64,7 @@ def EventPump(evm):
                 if err.internal is not Message.INCOMPLETE:
                     i, length = 1, len(buffer_)
                     # move to the next SYNC byte
-                    while i < length and ord(buffer_[i]) != MESSAGE_TX_SYNC:
+                    while i < length and buffer_[i] != MESSAGE_TX_SYNC:
                         i += 1
                     buffer_ = buffer_[i:]
                 else:
