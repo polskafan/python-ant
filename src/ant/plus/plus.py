@@ -122,7 +122,7 @@ class DeviceProfile(object):
             self.state = ChannelState.OPEN
             onDevicePaired = self.callbacks.get('onDevicePaired')
             if onDevicePaired:
-                onDevicePaired(ChannelID(msg.deviceNumber, msg.deviceType, msg.transmissionType))
+                onDevicePaired(self, ChannelID(msg.deviceNumber, msg.deviceType, msg.transmissionType))
 
         elif isinstance(msg, ChannelEventResponseMessage):
             if msg.messageCode == EVENT_CHANNEL_CLOSED:
