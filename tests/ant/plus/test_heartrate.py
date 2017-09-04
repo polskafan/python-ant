@@ -257,7 +257,7 @@ class HeartRateTest(unittest.TestCase):
 
         hr._set_data(create_msg(beat_time = 2013, beat_count = 131, computed_hr = 0xb4))
 
-        self.assertEqual(333, callback.rr_interval_ms)
+        self.assertAlmostEqual(333, callback.rr_interval_ms)
         self.assertAlmostEqual(1.965, callback.event_time_s)
 
     def test_non_consecutive_beat_page_0_r_r_interval(self):
@@ -269,7 +269,7 @@ class HeartRateTest(unittest.TestCase):
         hr._set_data(create_msg(beat_time = 2013, beat_count = 132, computed_hr = 0xb4))
 
         self.assertEqual(None, callback.rr_interval_ms)
-        self.assertEqual(1.9649999999999999, callback.event_time_s)
+        self.assertAlmostEqual(1.965, callback.event_time_s)
 
     def test_consecutive_page_0_r_r_interval_wraparound(self):
         callback = TestHeartRateCallback()
@@ -278,7 +278,7 @@ class HeartRateTest(unittest.TestCase):
         hr._set_data(create_msg(beat_time = 65535, beat_count = 255, computed_hr = 0xb4))
         hr._set_data(create_msg(beat_time = 341, beat_count = 0, computed_hr = 0xb4))
 
-        self.assertEqual(333, callback.rr_interval_ms)
+        self.assertAlmostEqual(333, callback.rr_interval_ms)
         self.assertAlmostEqual(64.332, callback.event_time_s)
 
     def test_page_gt_0_ignored_until_toggle_bit_changes(self):
@@ -296,8 +296,8 @@ class HeartRateTest(unittest.TestCase):
         hr._set_data(create_msg(page_number = 4, page_toggle = 1,
                                 page_bytes = page_bytes, beat_time = 2013,
                                 beat_count = 131, computed_hr = 0xb4))
-        self.assertEqual(333, callback.rr_interval_ms)
-        self.assertEqual(1.965, callback.event_time_s)
+        self.assertAlmostEqual(333, callback.rr_interval_ms)
+        self.assertAlmostEqual(1.965, callback.event_time_s)
 
     def test_page_2_and_3_return_consecutive_beat_rr_interval(self):
         callback = TestHeartRateCallback()
@@ -313,17 +313,17 @@ class HeartRateTest(unittest.TestCase):
         hr._set_data(create_msg(page_number = 2, page_toggle = 1,
                                 page_bytes = page_bytes, beat_time = 2500,
                                 beat_count = 132, computed_hr = 0xb4))
-        self.assertEqual(488, callback.rr_interval_ms)
+        self.assertAlmostEqual(488, callback.rr_interval_ms)
 
         hr._set_data(create_msg(page_number = 3, page_toggle = 0,
                                 page_bytes = page_bytes, beat_time = 3000,
                                 beat_count = 133, computed_hr = 0xb4))
-        self.assertEqual(488, callback.rr_interval_ms)
+        self.assertAlmostEqual(488, callback.rr_interval_ms)
 
         hr._set_data(create_msg(page_number = 3, page_toggle = 1,
                                 page_bytes = page_bytes, beat_time = 3500,
                                 beat_count = 134, computed_hr = 0xb4))
-        self.assertEqual(488, callback.rr_interval_ms)
+        self.assertAlmostEqual(488, callback.rr_interval_ms)
 
     def test_close_calls_close_on_channel(self):
         callback = TestHeartRateCallback()
