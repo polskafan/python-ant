@@ -99,10 +99,13 @@ class BicyclePower(DeviceProfile):
                 self.leftPedalSmoothness, self.rightPedalSmoothness\
                     = self.pageStructs[TORQUE_AND_PEDAL_PAGE].unpack(data)
 
-                self.leftTorque == convertPercent(self.leftTorque)
-                self.rightTorque == convertPercent(self.rightTorque)
-                self.leftPedalSmoothness == convertPercent(self.leftPedalSmoothness)
-                self.rightPedalSmoothness == convertPercent(self.rightPedalSmoothness)
+                self.leftTorque = convertPercent(self.leftTorque)
+                self.rightTorque = convertPercent(self.rightTorque)
+                self.leftPedalSmoothness = convertPercent(self.leftPedalSmoothness)
+                if self.rightPedalSmoothness == 0xFE:
+                    self.rightPedalSmoothness = None  # self.leftPedalSmoothness contains combined pedal smoothness
+                else:
+                    self.rightPedalSmoothness = convertPercent(self.rightPedalSmoothness)
 
         if page == POWER_ONLY_PAGE:
             callback = self.callbacks.get('onPowerData')
