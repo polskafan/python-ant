@@ -44,6 +44,7 @@ class BicyclePower(DeviceProfile):
 
     channelPeriod = 8182
     deviceType = 0x0B
+    name = 'Bicycle Power'
 
     def __init__(self, node, network, callbacks=None):
         """

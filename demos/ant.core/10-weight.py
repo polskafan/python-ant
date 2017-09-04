@@ -40,7 +40,7 @@ class RsMessage(message.ChannelMessage):
     type = 0x63
     def __init__(self, number=0x00):
         super(RsMessage, self).__init__(number=number, payload=RSP)
-        
+
 
 rs = RsMessage(0)
 RECV = 0
@@ -55,7 +55,7 @@ class WeightListener(event.EventCallback):
 #            print [map(ord, msg.payload)]
             page_number = msg.payload[1]
             RECV += 1
-            if   page_number == 1: 
+            if   page_number == 1:
                 pass
             elif page_number == 2:
                 pass
@@ -78,9 +78,9 @@ def reset_channel(antnode, channel=None):
     channel.period = 0x2000  # nebo 0x0020 ???
     channel.frequency = 0x39
 
-    rs.channelNumber = channel.number
+    rs.channelNumber = channel.deviceNumber
     channel.node.evm.writeMessage(rs)
-    
+
     channel.searchTimeout = TIMEOUT_NEVER
     channel.open()
 

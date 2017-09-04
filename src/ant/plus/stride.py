@@ -57,10 +57,11 @@ class StrideCallback(object):
 
 
 class Stride(DeviceProfile):
-    """ANT+ Stride Based and Speed and Distance Monitor"""
+    """ANT+ Stride Based Speed and Distance Monitor"""
 
     channelPeriod = 8134
     deviceType = 0x7c
+    name = 'Stride Based Speed and Distance'
 
     def __init__(self, node, network, device_id=0, transmission_type=0, callback=None):
         super(Stride, self).__init__(node, network, callback)

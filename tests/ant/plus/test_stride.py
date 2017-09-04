@@ -50,10 +50,9 @@ class StrideTest(unittest.TestCase):
         self.assertEqual(30, channel.searchTimeout)
 
         pairing_channel = ChannelID(0, 0x7c, 0)
-        self.assertEqual(pairing_channel.number, channel.device.number)
-        self.assertEqual(pairing_channel.type, channel.device.type)
-        self.assertEqual(pairing_channel.transmissionType,
-                         channel.device.transmissionType)
+        self.assertEqual(pairing_channel.deviceNumber, channel.id.deviceNumber)
+        self.assertEqual(pairing_channel.deviceType, channel.id.deviceType)
+        self.assertEqual(pairing_channel.transmissionType, channel.id.transmissionType)
 
         self.assertEqual(self.network.key, channel.assigned_network.key)
         self.assertEqual(self.network.name, channel.assigned_network.name)
@@ -71,10 +70,9 @@ class StrideTest(unittest.TestCase):
         channel = stride._event_handler.channel
 
         pairing_channel = ChannelID(1234, 0x7c, 2)
-        self.assertEqual(pairing_channel.number, channel.device.number)
-        self.assertEqual(pairing_channel.type, channel.device.type)
-        self.assertEqual(pairing_channel.transmissionType,
-                         channel.device.transmissionType)
+        self.assertEqual(pairing_channel.deviceNumber, channel.id.deviceNumber)
+        self.assertEqual(pairing_channel.deviceType, channel.id.deviceType)
+        self.assertEqual(pairing_channel.transmissionType, channel.id.transmissionType)
 
     def test_receives_page_1_channel_broadcast_message(self):
         stride = Stride(self.node, self.network)
@@ -83,8 +81,8 @@ class StrideTest(unittest.TestCase):
         self.assertEqual(None, stride.stride_count)
 
         test_data = bytearray(b'\x00' * 8)
-        test_data[0] = b'\x01'
-        test_data[6] = b'\x14'
+        test_data[0] = 0x01
+        test_data[6] = 0x14
 
         channel = stride._event_handler.channel
         channel.process(ChannelBroadcastDataMessage(data=test_data))
@@ -100,14 +98,14 @@ class StrideTest(unittest.TestCase):
         self.assertEqual(None, stride.model_number)
 
         test_data = bytearray(b'\x00' * 8)
-        test_data[0] = b'\x50'
-        test_data[3] = b'\x05'
+        test_data[0] = 0x50
+        test_data[3] = 0x05
 
-        test_data[4] = b'\x03'
-        test_data[5] = b'\x14'
+        test_data[4] = 0x03
+        test_data[5] = 0x14
 
-        test_data[6] = b'\x06'
-        test_data[7] = b'\x12'
+        test_data[6] = 0x06
+        test_data[7] = 0x12
 
         channel = stride._event_handler.channel
         channel.process(ChannelBroadcastDataMessage(data=test_data))
@@ -124,13 +122,13 @@ class StrideTest(unittest.TestCase):
         self.assertEqual(None, stride.serial_number)
 
         test_data = bytearray(b'\x00' * 8)
-        test_data[0] = b'\x51'
-        test_data[3] = b'\x02'
+        test_data[0] = 0x51
+        test_data[3] = 0x02
 
-        test_data[4] = b'\x04'
-        test_data[5] = b'\x12'
-        test_data[6] = b'\x15'
-        test_data[7] = b'\x07'
+        test_data[4] = 0x04
+        test_data[5] = 0x12
+        test_data[6] = 0x15
+        test_data[7] = 0x07
 
         channel = stride._event_handler.channel
         channel.process(ChannelBroadcastDataMessage(data=test_data))

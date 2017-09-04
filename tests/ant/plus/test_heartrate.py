@@ -32,7 +32,8 @@ from .fakes import *
 from ant.core import event, message
 from ant.core.constants import NETWORK_KEY_ANT_PLUS, CHANNEL_TYPE_TWOWAY_RECEIVE
 from ant.core.node import Network, Node, Channel, ChannelID
-from ant.core.message import ChannelBroadcastDataMessage, ChannelIDMessage, ChannelFrequencyMessage, ChannelAssignMessage, ChannelPeriodMessage, ChannelSearchTimeoutMessage, ChannelOpenMessage, ChannelRequestMessage
+from ant.core.message import ChannelBroadcastDataMessage, ChannelIDMessage, ChannelFrequencyMessage,\
+    ChannelAssignMessage, ChannelPeriodMessage, ChannelSearchTimeoutMessage, ChannelOpenMessage, ChannelRequestMessage
 import ant.core.constants as constants
 
 from ant.plus.heartrate import *
@@ -55,24 +56,6 @@ def create_msg(page_number = 0, page_toggle = 0, page_bytes = bytearray(b'\xff' 
                      beat_time, beat_count, computed_hr)
 
     return msg
-
-
-class TestHeartRateCallback(HeartRateCallback):
-    def __init__(self):
-        self.device_number = None
-        self.transmission_type = None
-        self.computed_heartrate = None
-        self.event_time_s = None
-        self.rr_interval_ms = None
-
-    def device_found(self, device_number, transmission_type):
-        self.device_number = device_number
-        self.transmission_type = transmission_type
-
-    def heartrate_data(self, computed_heartrate, event_time_s, rr_interval_ms):
-        self.computed_heartrate = computed_heartrate
-        self.event_time_s = event_time_s
-        self.rr_interval_ms = rr_interval_ms
 
 
 class HeartRateTest(unittest.TestCase):
@@ -111,10 +94,9 @@ class HeartRateTest(unittest.TestCase):
         self.assertEqual(30, hr.channel.searchTimeout)
 
         pairing_channel = ChannelID(0, 0x78, 0)
-        self.assertEqual(pairing_channel.number, hr.channel.device.number)
-        self.assertEqual(pairing_channel.type, hr.channel.device.type)
-        self.assertEqual(pairing_channel.transmissionType,
-                         hr.channel.device.transmissionType)
+        self.assertEqual(pairing_channel.deviceNumber, hr.channel.id.deviceNumber)
+        self.assertEqual(pairing_channel.deviceType, hr.channel.id.deviceType)
+        self.assertEqual(pairing_channel.transmissionType, hr.channel.id.transmissionType)
 
         self.assertEqual(self.network.key, hr.channel.assigned_network.key)
         self.assertEqual(self.network.name, hr.channel.assigned_network.name)
@@ -130,10 +112,9 @@ class HeartRateTest(unittest.TestCase):
         hr.pair(ChannelID(1234, 0x78, 2))
 
         pairing_channel = ChannelID(1234, 0x78, 2)
-        self.assertEqual(pairing_channel.number, hr.channel.device.number)
-        self.assertEqual(pairing_channel.type, hr.channel.device.type)
-        self.assertEqual(pairing_channel.transmissionType,
-                         hr.channel.device.transmissionType)
+        self.assertEqual(pairing_channel.deviceNumber, hr.channel.id.deviceNumber)
+        self.assertEqual(pairing_channel.deviceType, hr.channel.id.deviceType)
+        self.assertEqual(pairing_channel.transmissionType, hr.channel.id.transmissionType)
 
     def test_receives_channel_broadcast_message(self):
         hr = HeartRate(self.node, self.network)
@@ -191,7 +172,7 @@ class HeartRateTest(unittest.TestCase):
         self.assertEqual((23358, 1), hr.detected_device)
         self.assertEqual(STATE_RUNNING, hr.state)
 
-    def test_paired_but_undetected_device_queries_id(self):
+    def test_paired_but_unknown_device_queries_id(self):
         hr = HeartRate(self.node, self.network, 23358, 1)
         hr.pair(ChannelID(23358, 0x78, 1))
 
@@ -244,14 +225,18 @@ class HeartRateTest(unittest.TestCase):
         self.assertEqual(STATE_SEARCHING, hr.state)
 
     def test_device_detected_callback(self):
-        callback = TestHeartRateCallback()
-        hr = HeartRate(self.node, self.network, callback = callback)
+        channelId = None
+        def callback(device, id):
+            nonlocal channelId
+            channelId = id
+        hr = HeartRate(self.node, self.network, callbacks = {'onDevicePaired': callback})
         hr.pair()
 
         hr.channel.process(ChannelIDMessage(0, 23358, 120, 1))
 
-        self.assertEqual(23358, callback.device_number)
-        self.assertEqual(1, callback.transmission_type)
+        self.assertEqual(23358, channelId.deviceNumber)
+        self.assertEqual(120, channelId.deviceType)
+        self.assertEqual(1, channelId.transmissionType)
 
     def test_data_callback(self):
         callback = TestHeartRateCallback()

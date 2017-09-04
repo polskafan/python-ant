@@ -32,38 +32,23 @@ from __future__ import print_function
 from .plus import DeviceProfile
 
 
-class HeartRateCallback(object):
-    """Receives heart rate events.
-    """
-
-    def device_found(self, device_number, transmission_type):
-        """Called when a device is first detected.
-
-        The callback receives the device number and transmission type.
-        When instantiating the HeartRate class, these can be supplied
-        in the device_id and transmission_type keyword parameters to
-        pair with the specific device.
-        """
-        pass
-
-    def heartrate_data(self, computed_heartrate, event_time_ms, rr_interval_ms):
-        """Called when heart rate data is received.
-
-        computed_heartrate - computed heart rate from monitor
-        event_time_ms - event time in ms
-        rr_interval_ms - time between successive R waves
-        """
-        pass
-
-
 class HeartRate(DeviceProfile):
     """ANT+ Heart Rate Monitor"""
 
     channelPeriod = 8070
     deviceType = 0x78
+    name = 'Heart Rate'
 
-    def __init__(self, node, network, device_id=0, transmission_type=0, callback=None):
-        super(HeartRate, self).__init__(node, network, callback)
+    def __init__(self, node, network, callbacks=None):
+        """
+        :param node: The ANT node to use
+        :param network: The ANT network to connect on
+        :param callbacks: Dictionary of string-function pairs specifying the callbacks to
+                use for each event. In addition to the events supported by `DeviceProfile`,
+                `BicyclePower` also has the following:
+                'onHeartRateData'
+        """
+        super(HeartRate, self).__init__(node, network, callbacks)
 
         self._computed_heart_rate = None
         self._previous_beat_count = 0
@@ -78,21 +63,14 @@ class HeartRate(DeviceProfile):
     def event_time_correction(self, time_difference):
         return time_difference * 1000 / 1024
 
-    def _set_data(self, data):
-        # ChannelMessage prepends the channel number to the message data
-        # (Incorrectly IMO)
-        data_size = 9
-        payload_offset = 1
-        page_index = 0 + payload_offset
-        prev_event_time_lsb_index = 2 + payload_offset
-        prev_event_time_msb_index = 3 + payload_offset
-        event_time_lsb_index = 4 + payload_offset
-        event_time_msb_index = 5 + payload_offset
-        heart_beat_count_index = 6 + payload_offset
-        computed_heart_rate_index = 7 + payload_offset
-
-        if len(data) != data_size:
-            return
+    def processData(self, data):
+        page_index = 0
+        prev_event_time_lsb_index = 2
+        prev_event_time_msb_index = 3
+        event_time_lsb_index = 4
+        event_time_msb_index = 5
+        heart_beat_count_index = 6
+        computed_heart_rate_index = 7
 
         rr_interval = None
         event_time = None
@@ -134,22 +112,9 @@ class HeartRate(DeviceProfile):
             self._previous_event_time = event_time
             self._accumulated_event_time += float(self.event_time_correction(time_difference)) / 1000
 
-        if (self.callback):
-            heartrate_data = getattr(self.callback, 'heartrate_data', None)
-            if heartrate_data:
-                heartrate_data(self._computed_heart_rate,
-                               self._accumulated_event_time,
-                               rr_interval)
-
-    def _set_detected_device(self, device_num, trans_type):
-        with self.lock:
-            self._detected_device = (device_num, trans_type)
-
-        if (self.callback):
-            device_found = getattr(self.callback, 'device_found', None)
-            if device_found:
-                device_found(device_num, trans_type)
-
+        callback = self.callbacks.get('onHeartRateData')
+        if callback:
+            callback(self._computed_heart_rate, self._accumulated_event_time, rr_interval)
 
     @property
     def computed_heart_rate(self):
@@ -159,29 +124,3 @@ class HeartRate(DeviceProfile):
         with self.lock:
             rate = self._computed_heart_rate
         return rate
-
-    @property
-    def detected_device(self):
-        """A tuple representing the detected device.
-
-        This is of the form (device_number, transmission_type). This should
-        be accessed when pairing to identify the monitor that is connected.
-        To specifically connect to that monitor in the future, provide the
-        result to the HeartRate constructor:
-
-        HeartRate(node, network, device_number, transmission_type)
-        """
-        return self._detected_device
-
-    @property
-    def state(self):
-        """Returns the current state of the connection. Only when this is
-        STATE_RUNNING can the data from the monitor be relied upon.
-        """
-        return self._event_handler._state
-
-    @property
-    def channel(self):
-        """Temporary until refactoring unit tests.
-        """
-        return self._event_handler.channel

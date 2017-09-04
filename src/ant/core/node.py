@@ -49,13 +49,13 @@ class Network(object):
 
 class ChannelID(object):
     def __init__(self, devNumber, devType, transmissionType):
-        self.number = devNumber
-        self.type = devType
+        self.deviceNumber = devNumber
+        self.deviceType = devType
         self.transmissionType = transmissionType
 
     def __str__(self):
         return '(device number = %s, device type = %s, transmission type = %s)' % \
-                (self.number, self.type, self.transmissionType)
+                (self.deviceNumber, self.deviceType, self.transmissionType)
 
 
 class Channel(event.EventCallback):

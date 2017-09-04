@@ -80,8 +80,8 @@ class DeviceProfile(object):
                 `ant.node.ChannelID` to pair with a specific device.
         :param searchTimeout: Time to allow for searching, in seconds.
         """
-        deviceNumber = 0 if channelId is None else channelId.number
-        deviceType = self.deviceType if channelId is None else channelId.type
+        deviceNumber = 0 if channelId is None else channelId.deviceNumber
+        deviceType = self.deviceType if channelId is None else channelId.deviceType
         transmissionType = 0 if channelId is None else channelId.transmissionType
 
         self.channel = self.node.getFreeChannel()
