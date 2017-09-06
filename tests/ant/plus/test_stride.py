@@ -29,9 +29,10 @@ from .fakes import *
 
 from ant.plus.stride import *
 
-from ant.core.node import Network, Node, Channel, ChannelID
+from ant.core.node import Network, ChannelID
 from ant.core.constants import NETWORK_KEY_ANT_PLUS, CHANNEL_TYPE_TWOWAY_RECEIVE
 from ant.core.message import ChannelBroadcastDataMessage
+
 
 class StrideTest(unittest.TestCase):
     def setUp(self):
@@ -43,7 +44,7 @@ class StrideTest(unittest.TestCase):
         stride = Stride(self.node, self.network)
         stride.pair()
 
-        channel = stride._event_handler.channel
+        channel = stride.channel
 
         self.assertEqual(0x39, channel.frequency)
         self.assertEqual(8134, channel.period)
@@ -67,7 +68,7 @@ class StrideTest(unittest.TestCase):
         stride = Stride(self.node, self.network)
         stride.pair(ChannelID(1234, 0x7c, 2))
 
-        channel = stride._event_handler.channel
+        channel = stride.channel
 
         pairing_channel = ChannelID(1234, 0x7c, 2)
         self.assertEqual(pairing_channel.deviceNumber, channel.id.deviceNumber)
@@ -84,8 +85,7 @@ class StrideTest(unittest.TestCase):
         test_data[0] = 0x01
         test_data[6] = 0x14
 
-        channel = stride._event_handler.channel
-        channel.process(ChannelBroadcastDataMessage(data=test_data))
+        stride.channel.process(ChannelBroadcastDataMessage(data=test_data))
 
         self.assertEqual(20, stride.stride_count)
 
@@ -107,8 +107,7 @@ class StrideTest(unittest.TestCase):
         test_data[6] = 0x06
         test_data[7] = 0x12
 
-        channel = stride._event_handler.channel
-        channel.process(ChannelBroadcastDataMessage(data=test_data))
+        stride.channel.process(ChannelBroadcastDataMessage(data=test_data))
 
         self.assertEqual(5, stride.hardware_revision)
         self.assertEqual(5123, stride.manufacturer_id)
@@ -130,8 +129,7 @@ class StrideTest(unittest.TestCase):
         test_data[6] = 0x15
         test_data[7] = 0x07
 
-        channel = stride._event_handler.channel
-        channel.process(ChannelBroadcastDataMessage(data=test_data))
+        stride.channel.process(ChannelBroadcastDataMessage(data=test_data))
 
         self.assertEqual(2, stride.software_revision)
         self.assertEqual(68293895, stride.serial_number)
