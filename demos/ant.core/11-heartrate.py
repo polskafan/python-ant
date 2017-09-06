@@ -32,11 +32,11 @@ hr = HeartRate(antnode, network, callbacks = {'onDevicePaired': device_found,
                                               'onHeartRateData': heartrate_data})
 
 # Unpaired, search:
-hr.pair()
+hr.open()
 
 # Paired to a specific device:
-#hr.pair(ChannelID(23359, 120, 1))
-#hr.pair(ChannelID(21840, 120 ,81))
+#hr.open(ChannelID(23359, 120, 1))
+#hr.open(ChannelID(21840, 120 ,81))
 
 monitor = None
 while True:

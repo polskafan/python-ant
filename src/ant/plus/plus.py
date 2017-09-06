@@ -69,7 +69,7 @@ class DeviceProfile(object):
         self.state = ChannelState.CLOSED
         self._detected = False
 
-    def pair(self, channelId=None, searchTimeout=30):
+    def open(self, channelId=None, searchTimeout=30):
         """Pairs with a device and opens a channel for communicating.
         Once pairing has completed and the first data message has been recieved, the onDevicePaired
         callback will be called with the full channel ID.
