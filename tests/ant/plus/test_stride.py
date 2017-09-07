@@ -48,7 +48,7 @@ class StrideTest(unittest.TestCase):
 
         self.assertEqual(0x39, channel.frequency)
         self.assertEqual(8134, channel.period)
-        self.assertEqual(30, channel.searchTimeout)
+        self.assertEqual(12, channel.searchTimeout)  # Each count is equivalent to 2.5 seconds, so 12 = 30 seconds.
 
         pairing_channel = ChannelID(0, 0x7c, 0)
         self.assertEqual(pairing_channel.deviceNumber, channel.id.deviceNumber)

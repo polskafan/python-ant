@@ -27,8 +27,7 @@
 import struct
 import unittest
 
-from ant.core.message import ChannelFrequencyMessage,\
-    ChannelAssignMessage, ChannelPeriodMessage, ChannelSearchTimeoutMessage, ChannelOpenMessage
+from ant.core.message import *
 from ant.core.node import Network
 from ant.plus.heartrate import *
 from ant.plus.plus import *
@@ -66,7 +65,7 @@ class HeartRateTest(unittest.TestCase):
 
         self.assertEqual(0x39, hr.channel.frequency)
         self.assertEqual(8070, hr.channel.period)
-        self.assertEqual(30, hr.channel.searchTimeout)
+        self.assertEqual(12, hr.channel.searchTimeout)  # Each count is equivalent to 2.5 seconds, so 12 = 30 seconds.
 
         pairing_channel = ChannelID(0, 0x78, 0)
         self.assertEqual(pairing_channel.deviceNumber, hr.channel.id.deviceNumber)
@@ -335,7 +334,8 @@ class HeartRateTest(unittest.TestCase):
         hr = HeartRate(self.node, self.network, callbacks = {'onChannelClosed': callback})
         hr.open()
 
-        hr.close()
+        hr.channel.process(ChannelCloseMessage(0))
+
         self.assertEqual(True, closeCalled)
         self.assertEqual(ChannelState.CLOSED, hr.state)
 
