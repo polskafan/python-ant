@@ -334,7 +334,7 @@ class HeartRateTest(unittest.TestCase):
         hr = HeartRate(self.node, self.network, callbacks = {'onChannelClosed': callback})
         hr.open()
 
-        hr.channel.process(ChannelCloseMessage(0))
+        hr.channel.process(ChannelEventResponseMessage(0, MESSAGE_CHANNEL_EVENT, EVENT_CHANNEL_CLOSED))
 
         self.assertEqual(True, closeCalled)
         self.assertEqual(ChannelState.CLOSED, hr.state)

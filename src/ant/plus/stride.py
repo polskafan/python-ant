@@ -34,28 +34,6 @@ import struct
 from .plus import DeviceProfile
 
 
-class StrideCallback(object):
-    """Receives stride events.
-    """
-
-    def device_found(self, device_number, transmission_type):
-        """Called when a device is first detected.
-
-        The callback receives the device number and transmission type.
-        When instantiating the HeartRate class, these can be supplied
-        in the device_id and transmission_type keyword parameters to
-        pair with the specific device.
-        """
-        pass
-
-    def stride_data(self, num_steps, distance_m):
-        """Called when stride data is received.
-
-        The number of steps and the distance travelled in meters since
-        the device was found is provided.
-        """
-
-
 class Stride(DeviceProfile):
     """ANT+ Stride Based Speed and Distance Monitor"""
 
@@ -63,8 +41,14 @@ class Stride(DeviceProfile):
     deviceType = 0x7c
     name = 'Stride Based Speed and Distance'
 
-    def __init__(self, node, network, device_id=0, transmission_type=0, callback=None):
-        super(Stride, self).__init__(node, network, callback)
+    def __init__(self, node, network, callbacks=None):
+        """
+        :param node: The ANT node to use
+        :param network: The ANT network to connect on
+        :param callbacks: Dictionary of string-function pairs specifying the callbacks to
+                use for each event.
+        """
+        super(Stride, self).__init__(node, network, callbacks)
 
         self._detected_device = None
 
@@ -76,14 +60,8 @@ class Stride(DeviceProfile):
         self._sw_revision = None
         self._serial_number = None
 
-    def _set_data(self, data):
-        # ChannelMessage prepends the channel number to the message data
-        # (Incorrectly IMO)
-        data_size = 9
-        payload_offset = 1
-
-        if len(data) != data_size:
-            return
+    def processData(self, data):
+        payload_offset = 0
 
         with self.lock:
             data_page_index = 0 + payload_offset
@@ -120,19 +98,6 @@ class Stride(DeviceProfile):
             elif device_page == 0x51:
                 self._sw_revision = data[3 + payload_offset]
                 self._serial_number = struct.unpack('>L', data[4 + payload_offset:8 + payload_offset])[0]
-
-    @property
-    def detected_device(self):
-        """A tuple representing the detected device.
-
-        This is of the form (device_number, transmission_type). This should
-        be accessed when pairing to identify the monitor that is connected.
-        To specifically connect to that monitor in the future, provide the
-        result to the Stride constructor:
-
-        Stride(node, network, device_number, transmission_type)
-        """
-        return self._detected_device
 
     @property
     def stride_count(self):
