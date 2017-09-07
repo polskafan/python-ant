@@ -98,7 +98,7 @@ class HeartRateTest(unittest.TestCase):
         self.assertEqual(None, hr.computed_heart_rate)
 
         test_data = bytearray(b'\x00' * 8)
-        test_data[7] = b'\x64'
+        test_data[7] = 0x64
         hr.channel.process(ChannelBroadcastDataMessage(data=test_data))
 
         self.assertEqual(100, hr.computed_heart_rate)
@@ -134,7 +134,7 @@ class HeartRateTest(unittest.TestCase):
 
         messages = self.event_machine.messages
         self.assertIsInstance(messages[6], ChannelRequestMessage)
-        self.assertEqual(messages[6].messageID, constants.MESSAGE_CHANNEL_ID)
+        self.assertEqual(messages[6].messageID, MESSAGE_CHANNEL_ID)
 
     def test_receives_channel_id_message(self):
         hr = HeartRate(self.node, self.network)
@@ -152,7 +152,7 @@ class HeartRateTest(unittest.TestCase):
 
         messages = self.event_machine.messages
         self.assertIsInstance(messages[6], ChannelRequestMessage)
-        self.assertEqual(messages[6].messageID, constants.MESSAGE_CHANNEL_ID)
+        self.assertEqual(messages[6].messageID, MESSAGE_CHANNEL_ID)
 
         hr.channel.process(ChannelIDMessage(0, 23358, 120, 1))
         self.assertEqual(ChannelState.OPEN, hr.state)
@@ -163,16 +163,12 @@ class HeartRateTest(unittest.TestCase):
 
         self.assertEqual(ChannelState.SEARCHING, hr.state)
 
-        msg = ChannelEventResponseMessage(0x00,
-                                          constants.MESSAGE_CHANNEL_EVENT,
-                                          constants.EVENT_RX_SEARCH_TIMEOUT)
+        msg = ChannelEventResponseMessage(0x00, MESSAGE_CHANNEL_EVENT, EVENT_RX_SEARCH_TIMEOUT)
         hr.channel.process(msg)
 
         self.assertEqual(ChannelState.SEARCH_TIMEOUT, hr.state)
 
-        msg = ChannelEventResponseMessage(0x00,
-                                          constants.MESSAGE_CHANNEL_EVENT,
-                                          constants.EVENT_CHANNEL_CLOSED)
+        msg = ChannelEventResponseMessage(0x00, MESSAGE_CHANNEL_EVENT, EVENT_CHANNEL_CLOSED)
         hr.channel.process(msg)
         self.assertEqual(ChannelState.CLOSED, hr.state)
 
@@ -187,9 +183,7 @@ class HeartRateTest(unittest.TestCase):
 
         self.assertEqual(ChannelState.OPEN, hr.state)
 
-        msg = ChannelEventResponseMessage(0x00,
-                                          constants.MESSAGE_CHANNEL_EVENT,
-                                          constants.EVENT_RX_FAIL_GO_TO_SEARCH)
+        msg = ChannelEventResponseMessage(0x00, MESSAGE_CHANNEL_EVENT, EVENT_RX_FAIL_GO_TO_SEARCH)
         hr.channel.process(msg)
 
         self.assertEqual(ChannelState.SEARCHING, hr.state)
