@@ -46,7 +46,10 @@ class Stride(DeviceProfile):
         :param node: The ANT node to use
         :param network: The ANT network to connect on
         :param callbacks: Dictionary of string-function pairs specifying the callbacks to
-                use for each event.
+                use for each event. In addition to the events supported by `DeviceProfile`,
+                `BicyclePower` also has the following:
+                'onStrideCount'
+                'onCalories'
         """
         super(Stride, self).__init__(node, network, callbacks)
 
@@ -62,6 +65,7 @@ class Stride(DeviceProfile):
 
     def processData(self, data):
         payload_offset = 0
+        device_page = None
 
         with self.lock:
             data_page_index = 0 + payload_offset
@@ -98,6 +102,15 @@ class Stride(DeviceProfile):
             elif device_page == 0x51:
                 self._sw_revision = data[3 + payload_offset]
                 self._serial_number = struct.unpack('>L', data[4 + payload_offset:8 + payload_offset])[0]
+
+        if device_page == 0x01:
+            callback = self.callbacks.get('onStrideCount')
+            if callback:
+                callback(self._stride_count)
+        if device_page == 0x02:
+            callback = self.callbacks.get('onCalories')
+            if callback:
+                callback(self._calories)
 
     @property
     def stride_count(self):
