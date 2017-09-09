@@ -155,7 +155,7 @@ class DriverTest(unittest.TestCase):
         self.driver.write(msg)
 
         self.assertEqual(self.driver.written_data[-1], msg.encode())
-        self.assertEqual(self.driver.log.logs[-1], (LOG_WRITE, str(msg.encode())))
+        self.assertEqual(self.driver.log.logs[-1], (LOG_WRITE, msg.encode()))
 
         global dumps
         self.assertEqual(dumps[0], (msg.encode(), 'WRITE'))

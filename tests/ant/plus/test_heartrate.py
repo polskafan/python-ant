@@ -229,8 +229,8 @@ class HeartRateTest(unittest.TestCase):
         hr.processData(create_msg(beat_time = 1672, beat_count = 130, computed_hr = 0xb4)[1:])
         hr.processData(create_msg(beat_time = 2013, beat_count = 131, computed_hr = 0xb4)[1:])
 
-        self.assertAlmostEqual(333, interval)
-        self.assertAlmostEqual(1.965, time)
+        self.assertAlmostEqual(333.0078125, interval)
+        self.assertAlmostEqual(1.9658203125, time)
 
     def test_non_consecutive_beat_page_0_r_r_interval(self):
         time = None
@@ -248,7 +248,7 @@ class HeartRateTest(unittest.TestCase):
         hr.processData(create_msg(beat_time = 2013, beat_count = 132, computed_hr = 0xb4)[1:])
 
         self.assertEqual(None, interval)
-        self.assertAlmostEqual(1.965, time)
+        self.assertAlmostEqual(1.9658203125, time)
 
     def test_consecutive_page_0_r_r_interval_wraparound(self):
         time = None
@@ -265,8 +265,8 @@ class HeartRateTest(unittest.TestCase):
         hr.processData(create_msg(beat_time = 65535, beat_count = 255, computed_hr = 0xb4)[1:])
         hr.processData(create_msg(beat_time = 341, beat_count = 0, computed_hr = 0xb4)[1:])
 
-        self.assertAlmostEqual(333, interval)
-        self.assertAlmostEqual(64.332, time)
+        self.assertAlmostEqual(333.0078125, interval)
+        self.assertAlmostEqual(64.33203125, time)
 
     def test_page_gt_0_ignored_until_toggle_bit_changes(self):
         time = None
@@ -291,8 +291,8 @@ class HeartRateTest(unittest.TestCase):
         hr.processData(create_msg(page_number = 4, page_toggle = 1,
                                 page_bytes = page_bytes, beat_time = 2013,
                                 beat_count = 131, computed_hr = 0xb4)[1:])
-        self.assertAlmostEqual(333, interval)
-        self.assertAlmostEqual(1.965, time)
+        self.assertAlmostEqual(333.0078125, interval)
+        self.assertAlmostEqual(1.9658203125, time)
 
     def test_page_2_and_3_return_consecutive_beat_rr_interval(self):
         interval = None
@@ -313,17 +313,17 @@ class HeartRateTest(unittest.TestCase):
         hr.processData(create_msg(page_number = 2, page_toggle = 1,
                                 page_bytes = page_bytes, beat_time = 2500,
                                 beat_count = 132, computed_hr = 0xb4)[1:])
-        self.assertAlmostEqual(488, interval)
+        self.assertAlmostEqual(488.28125, interval)
 
         hr.processData(create_msg(page_number = 3, page_toggle = 0,
                                 page_bytes = page_bytes, beat_time = 3000,
                                 beat_count = 133, computed_hr = 0xb4)[1:])
-        self.assertAlmostEqual(488, interval)
+        self.assertAlmostEqual(488.28125, interval)
 
         hr.processData(create_msg(page_number = 3, page_toggle = 1,
                                 page_bytes = page_bytes, beat_time = 3500,
                                 beat_count = 134, computed_hr = 0xb4)[1:])
-        self.assertAlmostEqual(488, interval)
+        self.assertAlmostEqual(488.28125, interval)
 
     def test_close_calls_close_on_channel(self):
         closeCalled = False
@@ -334,7 +334,7 @@ class HeartRateTest(unittest.TestCase):
         hr = HeartRate(self.node, self.network, callbacks = {'onChannelClosed': callback})
         hr.open()
 
-        hr.channel.process(ChannelEventResponseMessage(0, MESSAGE_CHANNEL_EVENT, EVENT_CHANNEL_CLOSED))
+        hr.process(ChannelEventResponseMessage(0, MESSAGE_CHANNEL_EVENT, EVENT_CHANNEL_CLOSED), hr.channel)
 
         self.assertEqual(True, closeCalled)
         self.assertEqual(ChannelState.CLOSED, hr.state)
