@@ -47,7 +47,7 @@ class Stride(DeviceProfile):
         :param network: The ANT network to connect on
         :param callbacks: Dictionary of string-function pairs specifying the callbacks to
                 use for each event. In addition to the events supported by `DeviceProfile`,
-                `BicyclePower` also has the following:
+                `Stride` also has the following:
                 'onStrideCount'
                 'onCalories'
         """
