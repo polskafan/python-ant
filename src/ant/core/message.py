@@ -108,23 +108,25 @@ class Message(with_metaclass(MessageType)):
     def decode(cls, raw):
         raw = bytearray(raw)
         if len(raw) < 5:
-            raise MessageError('Could not decode (message is incomplete).',
+            raise MessageError('Could not decode. Message length should be >=5 bytes but was %d.' % len(raw),
                                internal=Message.INCOMPLETE)
 
         sync, length, type_ = raw[:MSG_HEADER_SIZE]
 
         if sync != MESSAGE_TX_SYNC:
-            raise MessageError('Could not decode (expected TX sync).',
+            raise MessageError('Could not decode. Expected TX sync but got 0x%.2x.' % sync,
                                internal=Message.CORRUPTED)
         if len(raw) < (length + MSG_HEADER_SIZE + MSG_FOOTER_SIZE):
-            raise MessageError('Could not decode (message is incomplete).',
+            raise MessageError('Could not decode. Message length should be %d but was %d.' %
+                               (length + MSG_HEADER_SIZE + MSG_FOOTER_SIZE, len(raw)),
                                internal=Message.INCOMPLETE)
 
         msg = Message(type=type_)  # pylint: disable=unexpected-keyword-arg
         msg.payload = raw[MSG_HEADER_SIZE:length + MSG_HEADER_SIZE]
 
         if msg.checksum != raw[length + MSG_HEADER_SIZE]:
-            raise MessageError('Could not decode (bad checksum).',
+            raise MessageError('Could not decode. Checksum should be 0x%.2x but was 0x%.2x.' %
+                               (raw[length + MSG_HEADER_SIZE], msg.checksum),
                                internal=Message.CORRUPTED)
 
         return msg
@@ -150,7 +152,7 @@ class ChannelMessage(Message):
     @channelNumber.setter
     def channelNumber(self, number):
         if (number > 0xFF) or (number < 0x00):
-            raise MessageError('Could not set channel number (out of range).')
+            raise MessageError('Could not set channel number. Should be 0 to 255 but was %s.' % number)
 
         self._payload[0] = number
 
@@ -358,7 +360,7 @@ class ChannelRequestMessage(ChannelMessage):
     @messageID.setter
     def messageID(self, messageID):
         if (messageID > 0xFF) or (messageID < 0x00):
-            raise MessageError('Could not set message ID (out of range).')
+            raise MessageError('Could not set message ID. Should be 0 to 255 but was %s.' % messageID)
 
         self._payload[1] = messageID
 
@@ -401,7 +403,7 @@ class ChannelEventResponseMessage(ChannelMessage):
     @messageID.setter
     def messageID(self, message_id):
         if (message_id > 0xFF) or (message_id < 0x00):
-            raise MessageError('Could not set message ID (out of range).')
+            raise MessageError('Could not set message ID. Should be 0 to 255 but was %s.' % message_id)
 
         self._payload[1] = message_id
 
@@ -411,7 +413,7 @@ class ChannelEventResponseMessage(ChannelMessage):
     @messageCode.setter
     def messageCode(self, message_code):
         if (message_code > 0xFF) or (message_code < 0x00):
-            raise MessageError('Could not set message code (out of range).')
+            raise MessageError('Could not set message code. Should be 0 to 255 but was %s.' % message_code)
 
         self._payload[2] = message_code
 
@@ -439,7 +441,7 @@ class ChannelStatusMessage(ChannelMessage):
     @status.setter
     def status(self, status):
         if (status > 0xFF) or (status < 0x00):
-            raise MessageError('Could not set channel status (out of range).')
+            raise MessageError('Could not set channel status. Should be 0 to 255 but was %s.' % status)
 
         self._payload[1] = status
 
@@ -475,7 +477,7 @@ class StartupMessage(Message):
     @startupMessage.setter
     def startupMessage(self, startupMessage):
         if (startupMessage > 0xFF) or (startupMessage < 0x00):
-            raise MessageError('Could not set start-up message (out of range).')
+            raise MessageError('Could not set start-up message. Should be 0 to 255 but was %s.' % startupMessage)
         self._payload[0] = startupMessage
 
 
@@ -497,8 +499,7 @@ class CapabilitiesMessage(Message):
     @maxChannels.setter
     def maxChannels(self, num):
         if (num > 0xFF) or (num < 0x00):
-            raise MessageError('Could not set max channels ' \
-                                   '(out of range).')
+            raise MessageError('Could not set max channels. Should be 0 to 255 but was %s.' % num)
         self._payload[0] = num
 
     @property
@@ -507,7 +508,7 @@ class CapabilitiesMessage(Message):
     @maxNetworks.setter
     def maxNetworks(self, num):
         if (num > 0xFF) or (num < 0x00):
-            raise MessageError('Could not set max networks (out of range).')
+            raise MessageError('Could not set max networks. Should be 0 to 255 but was %s.' % num)
         self._payload[1] = num
 
     @property
@@ -516,7 +517,7 @@ class CapabilitiesMessage(Message):
     @stdOptions.setter
     def stdOptions(self, num):
         if (num > 0xFF) or (num < 0x00):
-            raise MessageError('Could not set std options (out of range).')
+            raise MessageError('Could not set std options. Should be 0 to 255 but was %s.' % num)
         self._payload[2] = num
 
     @property
@@ -525,7 +526,7 @@ class CapabilitiesMessage(Message):
     @advOptions.setter
     def advOptions(self, num):
         if (num > 0xFF) or (num < 0x00):
-            raise MessageError('Could not set adv options (out of range).')
+            raise MessageError('Could not set adv options. Should be 0 to 255 but was %s.' % num)
         self._payload[3] = num
 
     @property
@@ -534,7 +535,7 @@ class CapabilitiesMessage(Message):
     @advOptions2.setter
     def advOptions2(self, num):
         if (num > 0xFF) or (num < 0x00):
-            raise MessageError('Could not set adv options 2 (out of range).')
+            raise MessageError('Could not set adv options 2. Should be 0 to 255 but was %s.' % num)
         if len(self._payload) == 4:
             self._payload.append(0)
         self._payload[4] = num

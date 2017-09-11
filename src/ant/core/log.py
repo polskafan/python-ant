@@ -97,7 +97,7 @@ class LogWriter(object):
         self.packer = msgpack.Packer()
 
         header = ['ANT-LOG', 0x01]  # [MAGIC, VERSION]
-        self.fd.write(self.packer.pack(header))
+        self.fd.write(str(self.packer.pack(header)))
 
     def close(self):
         if self.is_open:
@@ -116,7 +116,7 @@ class LogWriter(object):
         if isinstance(ev[-1], bytearray):
             ev[-1] = list(ev[-1])
 
-        self.fd.write(self.packer.pack(ev))
+        self.fd.write(str(self.packer.pack(ev)))
 
     def logOpen(self):
         self._logEvent(EVENT_OPEN)

@@ -47,11 +47,15 @@ class Network(object):
         return name if name is not None else self.key
 
 
-class Device(object):
+class ChannelID(object):
     def __init__(self, devNumber, devType, transmissionType):
-        self.number = devNumber
-        self.type = devType
+        self.deviceNumber = devNumber
+        self.deviceType = devType
         self.transmissionType = transmissionType
+
+    def __str__(self):
+        return '(device number = %s, device type = %s, transmission type = %s)' % \
+                (self.deviceNumber, self.deviceType, self.transmissionType)
 
 
 class Channel(event.EventCallback):
@@ -63,7 +67,7 @@ class Channel(event.EventCallback):
         self.evmCallbackLock = Lock()
         self.type = CHANNEL_TYPE_TWOWAY_RECEIVE
         self.network = None
-        self.device = None
+        self.id = None
         self._searchTimeout = None
         self._period = None
         self._frequency = None
@@ -85,13 +89,15 @@ class Channel(event.EventCallback):
         except MessageError as err:
             raise ChannelError('%s: could not set ID: %s' % (self, err))
 
-        self.device = Device(devNum, devType, transType)
+        self.id = ChannelID(devNum, devType, transType)
 
     @property
     def searchTimeout(self):
         return self._searchTimeout
     @searchTimeout.setter
     def searchTimeout(self, timeout):
+        if (timeout > 0xFF) or (timeout < 0x00):
+            raise ChannelError('%s: search timeout must be between 0 and 255, was %s', (self, timeout))
         msg = message.ChannelSearchTimeoutMessage(self.number, timeout)
         try:
             self.node.evm.writeMessage(msg).waitForAck(msg)
@@ -152,6 +158,11 @@ class Channel(event.EventCallback):
 
         evm.removeCallback(self)
 
+    def send(self, msg):
+        """Sends `msg` on this channel."""
+        msg.channelNumber = self.number
+        return self.node.send(msg)
+
     def unassign(self):
         msg = message.ChannelUnassignMessage(number=self.number)
         try:
@@ -176,9 +187,9 @@ class Channel(event.EventCallback):
 
     def __str__(self):
         rawstr = '<channel %d' % self.number
-        device = self.device
-        if device is not None:
-            rawstr += ' (0x%.2x)' % device
+        channelId = self.id
+        if channelId is not None:
+            rawstr += ', ' + str(channelId)
         return rawstr + '>'
 
 
@@ -224,8 +235,12 @@ class Node(object):
         self.reset(wait=False)
         self.evm.stop()
 
+    def send(self, msg):
+        """Sends `msg` to the ANT device"""
+        return self.evm.writeMessage(msg)
+
     def getCapabilities(self):
-        return (len(self.channels), len(self.networks), self.options)
+        return len(self.channels), len(self.networks), self.options
 
     def setNetworkKey(self, number, network=None):
         networks = self.networks

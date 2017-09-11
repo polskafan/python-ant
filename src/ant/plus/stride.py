@@ -29,48 +29,29 @@
 
 from __future__ import print_function
 
-from threading import Lock
 import struct
 
-from plus import _EventHandler
+from .plus import DeviceProfile
 
 
-class StrideCallback(object):
-    """Receives stride events.
-    """
+class Stride(DeviceProfile):
+    """ANT+ Stride Based Speed and Distance Monitor"""
 
-    def device_found(self, device_number, transmission_type):
-        """Called when a device is first detected.
+    channelPeriod = 8134
+    deviceType = 0x7c
+    name = 'Stride Based Speed and Distance'
 
-        The callback receives the device number and transmission type.
-        When instantiating the HeartRate class, these can be supplied
-        in the device_id and transmission_type keyword parameters to
-        pair with the specific device.
+    def __init__(self, node, network, callbacks=None):
         """
-        pass
-
-    def stride_data(self, num_steps, distance_m):
-        """Called when stride data is received.
-
-        The number of steps and the distance travelled in meters since
-        the device was found is provided.
+        :param node: The ANT node to use
+        :param network: The ANT network to connect on
+        :param callbacks: Dictionary of string-function pairs specifying the callbacks to
+                use for each event. In addition to the events supported by `DeviceProfile`,
+                `Stride` also has the following:
+                'onStrideCount'
+                'onCalories'
         """
-
-
-class Stride(object):
-    """ANT+ Stride Based and Speed and Distance Monitor
-
-    """
-
-    def __init__(self, node, network, device_id=0, transmission_type=0, callback=None):
-        """TODO
-
-        """
-        self._event_handler = _EventHandler(self, node)
-
-        self.callback = callback
-
-        self.lock = Lock()
+        super(Stride, self).__init__(node, network, callbacks)
 
         self._detected_device = None
 
@@ -82,22 +63,9 @@ class Stride(object):
         self._sw_revision = None
         self._serial_number = None
 
-        CHANNEL_FREQUENCY = 0x39
-        CHANNEL_PERIOD = 8134
-        DEVICE_TYPE = 0x7c
-        SEARCH_TIMEOUT = 30
-        self._event_handler.open_channel(network, CHANNEL_FREQUENCY, CHANNEL_PERIOD,
-                                         transmission_type, DEVICE_TYPE,
-                                         device_id, SEARCH_TIMEOUT)
-
-    def _set_data(self, data):
-        # ChannelMessage prepends the channel number to the message data
-        # (Incorrectly IMO)
-        data_size = 9
-        payload_offset = 1
-
-        if len(data) != data_size:
-            return
+    def processData(self, data):
+        payload_offset = 0
+        device_page = None
 
         with self.lock:
             data_page_index = 0 + payload_offset
@@ -135,18 +103,14 @@ class Stride(object):
                 self._sw_revision = data[3 + payload_offset]
                 self._serial_number = struct.unpack('>L', data[4 + payload_offset:8 + payload_offset])[0]
 
-    @property
-    def detected_device(self):
-        """A tuple representing the detected device.
-
-        This is of the form (device_number, transmission_type). This should
-        be accessed when pairing to identify the monitor that is connected.
-        To specifically connect to that monitor in the future, provide the
-        result to the Stride constructor:
-
-        Stride(node, network, device_number, transmission_type)
-        """
-        return self._detected_device
+        if device_page == 0x01:
+            callback = self.callbacks.get('onStrideCount')
+            if callback:
+                callback(self._stride_count)
+        if device_page == 0x02:
+            callback = self.callbacks.get('onCalories')
+            if callback:
+                callback(self._calories)
 
     @property
     def stride_count(self):

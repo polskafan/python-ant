@@ -25,13 +25,14 @@
 ##############################################################################
 
 import unittest
-from fakes import *
+from .fakes import *
 
 from ant.plus.stride import *
 
-from ant.core.node import Network, Node, Channel, Device
+from ant.core.node import Network, ChannelID
 from ant.core.constants import NETWORK_KEY_ANT_PLUS, CHANNEL_TYPE_TWOWAY_RECEIVE
 from ant.core.message import ChannelBroadcastDataMessage
+
 
 class StrideTest(unittest.TestCase):
     def setUp(self):
@@ -41,20 +42,18 @@ class StrideTest(unittest.TestCase):
 
     def test_default_channel_setup(self):
         stride = Stride(self.node, self.network)
+        stride.open()
 
-        channel = stride._event_handler.channel
+        channel = stride.channel
 
         self.assertEqual(0x39, channel.frequency)
         self.assertEqual(8134, channel.period)
-        self.assertEqual(30, channel.searchTimeout)
+        self.assertEqual(12, channel.searchTimeout)  # Each count is equivalent to 2.5 seconds, so 12 = 30 seconds.
 
-        # TODO device is the wrong name. The ANT docs refer to this
-        # structure as a channel ID
-        pairing_device = Device(0, 0x7c, 0)
-        self.assertEqual(pairing_device.number, channel.device.number)
-        self.assertEqual(pairing_device.type, channel.device.type)
-        self.assertEqual(pairing_device.transmissionType,
-                         channel.device.transmissionType)
+        pairing_channel = ChannelID(0, 0x7c, 0)
+        self.assertEqual(pairing_channel.deviceNumber, channel.id.deviceNumber)
+        self.assertEqual(pairing_channel.deviceType, channel.id.deviceType)
+        self.assertEqual(pairing_channel.transmissionType, channel.id.transmissionType)
 
         self.assertEqual(self.network.key, channel.assigned_network.key)
         self.assertEqual(self.network.name, channel.assigned_network.name)
@@ -66,49 +65,49 @@ class StrideTest(unittest.TestCase):
         self.assertEqual(True, channel.open_called)
 
     def test_paired_channel_setup(self):
-        stride = Stride(self.node, self.network, device_id = 1234, transmission_type = 2)
+        stride = Stride(self.node, self.network)
+        stride.open(ChannelID(1234, 0x7c, 2))
 
-        channel = stride._event_handler.channel
+        channel = stride.channel
 
-        device = Device(1234, 0x7c, 2)
-        self.assertEqual(device.number, channel.device.number)
-        self.assertEqual(device.type, channel.device.type)
-        self.assertEqual(device.transmissionType,
-                         channel.device.transmissionType)
+        pairing_channel = ChannelID(1234, 0x7c, 2)
+        self.assertEqual(pairing_channel.deviceNumber, channel.id.deviceNumber)
+        self.assertEqual(pairing_channel.deviceType, channel.id.deviceType)
+        self.assertEqual(pairing_channel.transmissionType, channel.id.transmissionType)
 
     def test_receives_page_1_channel_broadcast_message(self):
         stride = Stride(self.node, self.network)
+        stride.open()
 
         self.assertEqual(None, stride.stride_count)
 
         test_data = bytearray(b'\x00' * 8)
-        test_data[0] = b'\x01'
-        test_data[6] = b'\x14'
+        test_data[0] = 0x01
+        test_data[6] = 0x14
 
-        channel = stride._event_handler.channel
-        channel.process(ChannelBroadcastDataMessage(data=test_data))
+        stride.channel.process(ChannelBroadcastDataMessage(data=test_data))
 
         self.assertEqual(20, stride.stride_count)
 
     def test_receives_page_80_channel_broadcast_message(self):
         stride = Stride(self.node, self.network)
+        stride.open()
 
         self.assertEqual(None, stride.hardware_revision)
         self.assertEqual(None, stride.manufacturer_id)
         self.assertEqual(None, stride.model_number)
 
         test_data = bytearray(b'\x00' * 8)
-        test_data[0] = b'\x50'
-        test_data[3] = b'\x05'
+        test_data[0] = 0x50
+        test_data[3] = 0x05
 
-        test_data[4] = b'\x03'
-        test_data[5] = b'\x14'
+        test_data[4] = 0x03
+        test_data[5] = 0x14
 
-        test_data[6] = b'\x06'
-        test_data[7] = b'\x12'
+        test_data[6] = 0x06
+        test_data[7] = 0x12
 
-        channel = stride._event_handler.channel
-        channel.process(ChannelBroadcastDataMessage(data=test_data))
+        stride.channel.process(ChannelBroadcastDataMessage(data=test_data))
 
         self.assertEqual(5, stride.hardware_revision)
         self.assertEqual(5123, stride.manufacturer_id)
@@ -116,21 +115,21 @@ class StrideTest(unittest.TestCase):
 
     def test_receives_page_81_channel_broadcast_message(self):
         stride = Stride(self.node, self.network)
+        stride.open()
 
         self.assertEqual(None, stride.software_revision)
         self.assertEqual(None, stride.serial_number)
 
         test_data = bytearray(b'\x00' * 8)
-        test_data[0] = b'\x51'
-        test_data[3] = b'\x02'
+        test_data[0] = 0x51
+        test_data[3] = 0x02
 
-        test_data[4] = b'\x04'
-        test_data[5] = b'\x12'
-        test_data[6] = b'\x15'
-        test_data[7] = b'\x07'
+        test_data[4] = 0x04
+        test_data[5] = 0x12
+        test_data[6] = 0x15
+        test_data[7] = 0x07
 
-        channel = stride._event_handler.channel
-        channel.process(ChannelBroadcastDataMessage(data=test_data))
+        stride.channel.process(ChannelBroadcastDataMessage(data=test_data))
 
         self.assertEqual(2, stride.software_revision)
         self.assertEqual(68293895, stride.serial_number)
