@@ -74,6 +74,9 @@ class Stride(DeviceProfile):
             if device_page == 0x01:
                 stride_count_index = 6 + payload_offset
                 self._stride_count = data[stride_count_index]
+                callback = self.callbacks.get('onStrideCount')
+                if callback:
+                    callback(self._stride_count)
 
             elif device_page == 0x02:
                 print("page 2, template")
@@ -81,6 +84,9 @@ class Stride(DeviceProfile):
             elif device_page == 0x03:
                 calories_index = 6 + payload_offset
                 self._calories = data[calories_index]
+                callback = self.callbacks.get('onCalories')
+                if callback:
+                    callback(self._calories)
 
             elif device_page == 0x10:
                 print("page 16, Distance & Strides Since Battery Reset")
@@ -102,15 +108,6 @@ class Stride(DeviceProfile):
             elif device_page == 0x51:
                 self._sw_revision = data[3 + payload_offset]
                 self._serial_number = struct.unpack('>L', data[4 + payload_offset:8 + payload_offset])[0]
-
-        if device_page == 0x01:
-            callback = self.callbacks.get('onStrideCount')
-            if callback:
-                callback(self._stride_count)
-        if device_page == 0x02:
-            callback = self.callbacks.get('onCalories')
-            if callback:
-                callback(self._calories)
 
     @property
     def stride_count(self):

@@ -112,9 +112,9 @@ class HeartRate(DeviceProfile):
             self._previous_event_time = event_time
             self._accumulated_event_time += float(self.event_time_correction(time_difference)) / 1000
 
-        callback = self.callbacks.get('onHeartRateData')
-        if callback:
-            callback(self._computed_heart_rate, self._accumulated_event_time, rr_interval)
+            callback = self.callbacks.get('onHeartRateData')
+            if callback:
+                callback(self._computed_heart_rate, self._accumulated_event_time, rr_interval)
 
     @property
     def computed_heart_rate(self):
