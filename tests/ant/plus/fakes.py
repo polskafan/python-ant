@@ -25,6 +25,7 @@
 ##############################################################################
 
 from ant.core.node import Node, Channel
+from ant.core.constants import RESPONSE_NO_ERROR
 
 class FakeEventMachine():
     def __init__(self):
@@ -36,7 +37,7 @@ class FakeEventMachine():
         return self
 
     def waitForAck(self, msg):
-        return None
+        return RESPONSE_NO_ERROR
 
     def waitForMessage(self, class_):
         return self.waited_message
