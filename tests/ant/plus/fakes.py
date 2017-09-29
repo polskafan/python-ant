@@ -86,10 +86,10 @@ class FakeNode(Node):
     running = property(lambda self: self._running,
                        set_running)
 
-    def reset(self):
+    def reset(self, wait=True):
         pass
 
-    def start(self):
+    def start(self, wait=True):
         self.running = True
 
     def stop(self):

@@ -106,7 +106,7 @@ class DeviceProfile(object):
             difference = current - previous
         return difference
 
-    def process(self, msg):
+    def process(self, msg, channel):
         """Handles incoming channel messages
         Converts messages to ANT+ device specific data.
         """
