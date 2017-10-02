@@ -372,6 +372,10 @@ class ChannelBroadcastDataMessage(ChannelMessage):
     def __init__(self, number=0x00, data=b'\x00' * 7):
         super(ChannelBroadcastDataMessage, self).__init__(payload=data, number=number)
 
+    @property
+    def data(self):
+        return self._payload[1:9]
+
 
 class ChannelAcknowledgedDataMessage(ChannelMessage):
     type = constants.MESSAGE_CHANNEL_ACKNOWLEDGED_DATA
@@ -379,12 +383,20 @@ class ChannelAcknowledgedDataMessage(ChannelMessage):
     def __init__(self, number=0x00, data=b'\x00' * 7):
         super(ChannelAcknowledgedDataMessage, self).__init__(payload=data, number=number)
 
+    @property
+    def data(self):
+        return self._payload[1:9]
+
 
 class ChannelBurstDataMessage(ChannelMessage):
     type = constants.MESSAGE_CHANNEL_BURST_DATA
 
     def __init__(self, number=0x00, data=b'\x00' * 7):
         super(ChannelBurstDataMessage, self).__init__(payload=data, number=number)
+
+    @property
+    def data(self):
+        return self._payload[1:9]
 
 
 # Channel event messages

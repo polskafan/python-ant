@@ -32,8 +32,7 @@ from threading import Lock
 from enum import Enum
 
 from ant.core.constants import *
-from ant.core.message import ChannelBroadcastDataMessage, ChannelRequestMessage, ChannelIDMessage, \
-    ChannelEventResponseMessage
+from ant.core.message import *
 from ant.core.node import ChannelID
 
 
@@ -111,11 +110,11 @@ class DeviceProfile(object):
         Converts messages to ANT+ device specific data.
         """
         if isinstance(msg, ChannelBroadcastDataMessage):
-            self.processData(msg.payload[1:])  # First byte of payload is the channel number
+            self.processData(msg.data)
 
             if not self._detected:
                 req_msg = ChannelRequestMessage(messageID=MESSAGE_CHANNEL_ID)
-                self.node.send(req_msg)
+                self.channel.send(req_msg)
                 self._detected = True
 
         elif isinstance(msg, ChannelIDMessage):
