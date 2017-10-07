@@ -35,7 +35,7 @@ from threading import Lock, Thread
 
 from ant.core.constants import MESSAGE_TX_SYNC
 from ant.core.message import Message, ChannelEventResponseMessage
-from ant.core.exceptions import MessageError
+from ant.core.exceptions import MessageError, MessageTimeoutError
 from usb.core import USBError
 
 
@@ -111,7 +111,7 @@ class EventMachineCallback(EventCallback):
                         messages.remove(emsg)
                         return emsg
             sleep(0.001)
-        raise MessageError("%s: timeout" % str(foo), internal=foo)
+        raise MessageTimeoutError("%s: timeout" % str(foo), internal=foo)
 
 class AckCallback(EventMachineCallback):
     WAIT_UNTIL = staticmethod(lambda msg, emsg: msg.type == emsg.messageID)
@@ -159,8 +159,8 @@ class EventMachine(object):
     def waitForAck(self, msg):
         return self.ack.waitFor(msg).messageCode
 
-    def waitForMessage(self, class_):
-        return self.msg.waitFor(class_)
+    def waitForMessage(self, class_, timeout=10):
+        return self.msg.waitFor(class_, timeout)
 
     def start(self, name=None, driver=None):
         with self.runningLock:

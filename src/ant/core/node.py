@@ -192,9 +192,16 @@ class Node(object):
         evm = self.evm
         evm.writeMessage(message.SystemResetMessage())
         if wait:
+            # This message is only available on specific devices (refer to section 9.4 of
+            # the ANT "Message Protocol and Usage" document)
             evm.waitForMessage(message.StartupMessage)
 
     def start(self, wait=True):
+        """
+        Initializes the ANT node and starts listening for messages
+        :param wait: Whether to wait for startup message or not. Some devices don't send it.
+        :return:
+        """
         if self.running:
             raise NodeError('Could not start ANT node (already started).')
 
