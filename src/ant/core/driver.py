@@ -106,7 +106,7 @@ class Driver(object):
 
         print("========== [%s] ==========" % title)
 
-        line, length = 0, 8
+        line, length = 0, 16
         while data:
             print('%04X' % line, *('%02X' % byte for byte in data[:length]))
             data = data[length:]

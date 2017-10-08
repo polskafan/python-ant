@@ -33,7 +33,7 @@ from __future__ import division, absolute_import, print_function, unicode_litera
 from time import sleep, time
 from threading import Lock, Thread
 
-from ant.core.constants import MESSAGE_TX_SYNC, RESPONSE_NO_ERROR
+from ant.core.constants import MESSAGE_TX_SYNC
 from ant.core.message import Message, ChannelEventResponseMessage
 from ant.core.exceptions import MessageError
 from usb.core import USBError
@@ -157,9 +157,7 @@ class EventMachine(object):
         return self
 
     def waitForAck(self, msg):
-        response = self.ack.waitFor(msg).messageCode
-        if response != RESPONSE_NO_ERROR:
-            raise MessageError("bad response code (%.2x)" % response, internal=(msg, response))
+        return self.ack.waitFor(msg).messageCode
 
     def waitForMessage(self, class_):
         return self.msg.waitFor(class_)

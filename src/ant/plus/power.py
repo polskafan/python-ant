@@ -70,7 +70,6 @@ class BicyclePower(DeviceProfile):
         self.rightPedalSmoothness = None
 
         self.pageStructs = {
-            # These structs define the format of the data in bytes 1 to 7. Byte 0 is the page number.
             POWER_ONLY_PAGE: Struct('<xBBBHH'),
             WHEEL_TORQUE_PAGE: Struct('<xxxxxxxxx'),  # TODO
             CRANK_TORQUE_PAGE: Struct('<xxxxxxxxx'),
@@ -79,9 +78,8 @@ class BicyclePower(DeviceProfile):
         }
 
     def processData(self, data):
-        page = None
+        page = data[0]
         with self.lock:
-            page = data[0]
             if page == POWER_ONLY_PAGE:
                 self.eventCount, pedalPowerByte, self.cadence,\
                 self.accumulatedPower, self.instantaneousPower\
@@ -95,6 +93,12 @@ class BicyclePower(DeviceProfile):
 
                 if self.cadence == 0xFF:  # Invalid value
                     self.cadence = None
+
+                callback = self.callbacks.get('onPowerData')
+                if callback:
+                    callback(self.eventCount, self.pedalDifferentiation, self.pedalPowerRatio,
+                             self.cadence, self.accumulatedPower, self.instantaneousPower)
+
             elif page == TORQUE_AND_PEDAL_PAGE:
                 self.eventCount, self.leftTorque, self.rightTorque,\
                 self.leftPedalSmoothness, self.rightPedalSmoothness\
@@ -108,16 +112,11 @@ class BicyclePower(DeviceProfile):
                 else:
                     self.rightPedalSmoothness = convertPercent(self.rightPedalSmoothness)
 
-        if page == POWER_ONLY_PAGE:
-            callback = self.callbacks.get('onPowerData')
-            if callback:
-                callback(self.eventCount, self.pedalDifferentiation, self.pedalPowerRatio,
-                         self.cadence, self.accumulatedPower, self.instantaneousPower)
-        elif page == TORQUE_AND_PEDAL_PAGE:
-            callback = self.callbacks.get('onTorqueAndPedalData')
-            if callback:
-                callback(self.eventCount, self.leftTorque, self.rightTorque,
-                         self.leftPedalSmoothness, self.rightPedalSmoothness)
+                callback = self.callbacks.get('onTorqueAndPedalData')
+                if callback:
+                    callback(self.eventCount, self.leftTorque, self.rightTorque,
+                             self.leftPedalSmoothness, self.rightPedalSmoothness)
+
 
 # Used by Torque Effectiveness and Pedal Smoothness page. Assumes value is in 1/2% increments.
 def convertPercent(value):

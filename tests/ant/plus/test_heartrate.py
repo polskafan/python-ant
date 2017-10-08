@@ -198,6 +198,7 @@ class HeartRateTest(unittest.TestCase):
 
         hr.channel.process(ChannelIDMessage(0, 23358, 120, 1))
 
+        self.assertIsNotNone(channelId)
         self.assertEqual(23358, channelId.deviceNumber)
         self.assertEqual(120, channelId.deviceType)
         self.assertEqual(1, channelId.transmissionType)
