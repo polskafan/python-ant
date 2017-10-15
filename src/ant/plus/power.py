@@ -141,6 +141,9 @@ class BicyclePower(DeviceProfile):
         self.channel.send(request)
 
     def process(self, msg, channel):
+        #
+        # TODO: Fix problem where requesting crank length a second time fails then channel closes.
+        #
         # If we have a callback waiting for a parameter, check if the message has come yet
         crankLengthCallback = self.callbacks.get('onCrankLengthSuccess')
         if crankLengthCallback:
