@@ -198,8 +198,8 @@ class Node(object):
 
     def start(self, wait=True):
         """
-        Initializes the ANT node and starts listening for messages
-        :param wait: Whether to wait for startup message or not. Some devices don't send it.
+        Initializes the ANT node and starts listening for messages.
+        :param wait: Whether to wait for startup message or not. Some older devices don't send it.
         :return:
         """
         if self.running:

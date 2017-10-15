@@ -110,18 +110,16 @@ class BicyclePower(DeviceProfile):
         request = ChannelAcknowledgedDataMessage(data=payload)
         self.channel.send(request)
 
-    def getCrankLength(self, onSuccess=None, onTimeout=None):
+    def getCrankLength(self, onSuccess, onTimeout=None):
         """
         Queries the crank length from the device. The `callback` function is called when
         the device responds with the parameter value.
         :param onSuccess: Function or lambda which called when the device responds with the value.
         :param onTimeout: Called if response does not come within `self.maxQueryTries` number of messages.
         """
-        if 'onCrankLengthSuccess' not in self.callbacks and 'onCrankLengthTimeout' not in self.callbacks:
-            if onSuccess is not None:
-                self.callbacks['onCrankLengthSuccess'] = onSuccess
-            if onTimeout is not None:
-                self.callbacks['onCrankLengthTimeout'] = onTimeout
+        if 'onCrankLengthSuccess' not in self.callbacks:
+            self.callbacks['onCrankLengthSuccess'] = onSuccess
+            self.callbacks['onCrankLengthTimeout'] = onTimeout
             self.numQueryTries = 0
             self.requestParameter(CRANK_PARAMETER_SUBPAGE)
 
