@@ -26,6 +26,7 @@
 
 from __future__ import division, absolute_import, print_function, unicode_literals
 
+
 class ANTException(Exception):
     pass
 
@@ -38,6 +39,10 @@ class MessageError(ANTException):
     def __init__(self, msg, internal=''):
         super(MessageError, self).__init__(msg)
         self.internal = internal
+
+
+class MessageTimeoutError(MessageError):
+    pass
 
 
 class NodeError(ANTException):

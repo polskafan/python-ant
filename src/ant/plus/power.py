@@ -29,14 +29,19 @@
 
 from struct import Struct
 
+from ant.core.message import *
 from .plus import DeviceProfile
 
 
+CALIBRATION_PAGE = 0x01
+PARAMETERS_PAGE = 0x02
 POWER_ONLY_PAGE = 0x10
 WHEEL_TORQUE_PAGE = 0x11
 CRANK_TORQUE_PAGE = 0x12
 TORQUE_AND_PEDAL_PAGE = 0x13
 CRANK_TORQUE_FREQ_PAGE = 0x20
+
+CRANK_PARAMETER_SUBPAGE = 0x01
 
 
 class BicyclePower(DeviceProfile):
@@ -59,7 +64,6 @@ class BicyclePower(DeviceProfile):
         super(BicyclePower, self).__init__(node, network, callbacks)
 
         self.eventCount = None
-        self.pedalDifferentiation = False  # Whether the device can tell the difference between left and right pedals
         self.pedalPowerRatio = None
         self.cadence = None
         self.accumulatedPower = None
@@ -77,6 +81,23 @@ class BicyclePower(DeviceProfile):
             CRANK_TORQUE_FREQ_PAGE: Struct('<xxxxxxxxx')
         }
 
+    def setCrankLength(self, value):
+        """
+        Sets the crank length on the device.
+        """
+        rawCrankValue = int((value - 110.0) / 0.5)
+        payload = bytes([
+            0x02,               # Data Page: Get/Set Bicycle Parameters
+            0x01,               # Sub-page: Crank Parameters
+            0xFF, 0xFF,         # Reserved
+            rawCrankValue,
+            0x00,               # Sensor Status, read-only
+            0x00,               # Sensor Capabilities, read-only
+            0xFF                # Reserved
+        ])
+        request = ChannelAcknowledgedDataMessage(data=payload)
+        self.channel.send(request)
+
     def processData(self, data):
         page = data[0]
         with self.lock:
@@ -85,19 +106,18 @@ class BicyclePower(DeviceProfile):
                 self.accumulatedPower, self.instantaneousPower\
                     = self.pageStructs[POWER_ONLY_PAGE].unpack(data)
 
-                if pedalPowerByte == 0xFF:  # Pedal power not used
-                    self.pedalPowerRatio = None
-                else:
-                    self.pedalDifferentiation = (pedalPowerByte >> 7) == 1
-                    self.pedalPowerRatio = (pedalPowerByte & 0x7F) / 100  # Convert from percent to fraction
+                self.pedalPowerRatio = None
+                if pedalPowerByte != 0xFF:  # 0xFF means pedal power is not used
+                    if (pedalPowerByte >> 7) == 1: # Can the device tell the difference between left and right pedals
+                        self.pedalPowerRatio = (pedalPowerByte & 0x7F) / 100  # Convert from percent to fraction
 
                 if self.cadence == 0xFF:  # Invalid value
                     self.cadence = None
 
                 callback = self.callbacks.get('onPowerData')
                 if callback:
-                    callback(self.eventCount, self.pedalDifferentiation, self.pedalPowerRatio,
-                             self.cadence, self.accumulatedPower, self.instantaneousPower)
+                    callback(self.eventCount, self.pedalPowerRatio, self.cadence,
+                             self.accumulatedPower, self.instantaneousPower)
 
             elif page == TORQUE_AND_PEDAL_PAGE:
                 self.eventCount, self.leftTorque, self.rightTorque,\
