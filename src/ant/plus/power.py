@@ -64,7 +64,6 @@ class BicyclePower(DeviceProfile):
         super(BicyclePower, self).__init__(node, network, callbacks)
 
         self.eventCount = None
-        self.pedalDifferentiation = False  # Whether the device can tell the difference between left and right pedals
         self.pedalPowerRatio = None
         self.cadence = None
         self.accumulatedPower = None
@@ -107,19 +106,18 @@ class BicyclePower(DeviceProfile):
                 self.accumulatedPower, self.instantaneousPower\
                     = self.pageStructs[POWER_ONLY_PAGE].unpack(data)
 
-                if pedalPowerByte == 0xFF:  # Pedal power not used
-                    self.pedalPowerRatio = None
-                else:
-                    self.pedalDifferentiation = (pedalPowerByte >> 7) == 1
-                    self.pedalPowerRatio = (pedalPowerByte & 0x7F) / 100  # Convert from percent to fraction
+                self.pedalPowerRatio = None
+                if pedalPowerByte != 0xFF:  # 0xFF means pedal power is not used
+                    if (pedalPowerByte >> 7) == 1: # Can the device tell the difference between left and right pedals
+                        self.pedalPowerRatio = (pedalPowerByte & 0x7F) / 100  # Convert from percent to fraction
 
                 if self.cadence == 0xFF:  # Invalid value
                     self.cadence = None
 
                 callback = self.callbacks.get('onPowerData')
                 if callback:
-                    callback(self.eventCount, self.pedalDifferentiation, self.pedalPowerRatio,
-                             self.cadence, self.accumulatedPower, self.instantaneousPower)
+                    callback(self.eventCount, self.pedalPowerRatio, self.cadence,
+                             self.accumulatedPower, self.instantaneousPower)
 
             elif page == TORQUE_AND_PEDAL_PAGE:
                 self.eventCount, self.leftTorque, self.rightTorque,\
