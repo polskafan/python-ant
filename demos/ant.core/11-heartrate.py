@@ -12,33 +12,48 @@ from ant.plus.heartrate import *
 
 from config import *
 
-device = driver.USB2Driver(log=LOG, debug=DEBUG, idProduct=0x1009)
-antnode = Node(device)
-antnode.start()
-network = Network(key=NETWORK_KEY_ANT_PLUS, name='N:ANT+')
-antnode.setNetworkKey(NETWORK_NUMBER_PUBLIC, network)
 
-def device_found(self, device_number, transmission_type):
-    print("Detect monitor device number: %d, transmission type: %d" % (device_number, transmission_type))
+#-------------------------------------------------#
+#  ANT Callbacks                                  #
+#-------------------------------------------------#
+def device_paired(device_profile, channel_id):
+    print(f'Connected to {device_profile.name} ({channel_id.deviceNumber})')
 
-def heartrate_data(self, computed_heartrate, event_time_ms, rr_interval_ms):
-    if rr_interval_ms is not None:
-        print("Heart rate: %d, event time(ms): %d, rr interval (ms): %d" %
-              (computed_heartrate, event_time_ms, rr_interval_ms))
-    else:
-        print("Heart rate: %d" % (computed_heartrate, ))
+def search_timed_out(device_profile):
+    print(f'Could not connect to {device_profile.name}')
 
-hr = HeartRate(antnode, network, callbacks = {'onDevicePaired': device_found,
-                                              'onHeartRateData': heartrate_data})
+def channel_closed(device_profile):
+    print(f'Channel closed for {device_profile.name}')
 
-# Unpaired, search:
-hr.open()
+def heart_rate_data(computed_heartrate, event_time_ms, rr_interval_ms):
+    print(f'Heart rate: {computed_heartrate}, event time(ms): {event_time_ms}, rr interval (ms): {rr_interval_ms}')
 
-# Paired to a specific device:
-#hr.open(ChannelID(23359, 120, 1))
-#hr.open(ChannelID(21840, 120 ,81))
 
-monitor = None
+#-------------------------------------------------#
+#  Initialization                                 #
+#-------------------------------------------------#
+antnode = Node(driver.USB2Driver(log=LOG, debug=DEBUG, idProduct=0x1009))
+try:
+    antnode.start()
+    network = Network(key=NETWORK_KEY_ANT_PLUS, name='N:ANT+')
+    antnode.setNetworkKey(NETWORK_NUMBER_PUBLIC, network)
+    
+    heartRateMonitor = HeartRate(antnode, network,
+                         {'onDevicePaired': device_paired,
+                          'onSearchTimeout': search_timed_out,
+                          'onChannelClosed': channel_closed,
+                          'onHeartRateData': heart_rate_data})
+    # Unpaired, search:
+    heartRateMonitor.open()
+
+    # Paired to a specific device:
+    #heartRateMonitor.open(channel_id(xxx, xxx, xxx))
+    
+    print('ANT started. Connecting to devices...')
+except ANTException as err:
+    print(f'Could not start ANT.\n{err}')
+
+
 while True:
     try:
         time.sleep(1)
