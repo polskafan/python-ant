@@ -60,5 +60,5 @@ while True:
     except KeyboardInterrupt:
         break
 
-hr.close()
+heartRateMonitor.close()
 antnode.stop()
