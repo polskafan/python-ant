@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Demonstrate the use of the ANT+ Heart Rate Device Profile
-
+"""Demonstrate the use of the ANT+ Power Device Profile
 """
 
 import time
@@ -25,8 +24,11 @@ def search_timed_out(device_profile):
 def channel_closed(device_profile):
     print(f'Channel closed for {device_profile.name}')
 
-def heart_rate_data(computed_heartrate, event_time_ms, rr_interval_ms):
-    print(f'Heart rate: {computed_heartrate}, event time(ms): {event_time_ms}, rr interval (ms): {rr_interval_ms}')
+def power_data(event_count, pedal_power_ratio, cadence, accumulated_power, instantaneous_power):
+    print(f'Power: {instantaneous_power}, accumulated: {accumulated_power}, ratio: {pedal_power_ratio}, cadence: {cadence}')
+
+def torque_and_pedal_data(event_count, left_torque, right_torque, left_pedal_smoothness, right_pedal_smoothness):
+    print(f'Torque: {left_torque} (left), {right_torque} (right),  pedal smoothness: {left_pedal_smoothness} (left), {right_pedal_smoothness} (right)')
 
 
 #-------------------------------------------------#
@@ -38,17 +40,13 @@ try:
     network = Network(key=NETWORK_KEY_ANT_PLUS, name='N:ANT+')
     antnode.setNetworkKey(NETWORK_NUMBER_PUBLIC, network)
     
-    heartRateMonitor = HeartRate(antnode, network,
+    powerMonitor = BicyclePower(antnode, network,
                          {'onDevicePaired': device_paired,
                           'onSearchTimeout': search_timed_out,
                           'onChannelClosed': channel_closed,
-                          'onHeartRateData': heart_rate_data})
-    # Unpaired, search:
-    heartRateMonitor.open()
-
-    # Paired to a specific device:
-    #heartRateMonitor.open(channel_id(xxx, xxx, xxx))
-    
+                          'onPowerData': power_data,
+                          'onTorqueAndPedalData': torque_and_pedal_data})
+    powerMonitor.open()
     print('ANT started. Connecting to devices...')
 except ANTException as err:
     print(f'Could not start ANT.\n{err}')
@@ -60,5 +58,5 @@ while True:
     except KeyboardInterrupt:
         break
 
-heartRateMonitor.close()
+powerMonitor.close()
 antnode.stop()
