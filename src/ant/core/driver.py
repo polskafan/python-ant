@@ -241,7 +241,7 @@ class USB2Driver(Driver):
         self._epOut = self._epIn = None
 
     def _read(self, count):
-        return self._epIn.read(count).tostring()
+        return self._epIn.read(count).tobytes()
 
     def _write(self, data):
         # TODO handle USBError here
