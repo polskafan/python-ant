@@ -1,0 +1,77 @@
+# -*- coding: utf-8 -*-
+'''
+Data processed
+     Data Page 16
+          Instantaneous speed 0.001 m/s
+     Data Page 22
+          Instantaneous Cadence spm
+          Instantaneous power watts
+'''
+
+import time
+import subprocess
+import os
+import fcntl
+import sys
+
+from ant.core import driver
+from ant.core.node import Node, Network, ChannelID
+from ant.core.constants import NETWORK_KEY_ANT_PLUS, NETWORK_NUMBER_PUBLIC
+from ant.plus.rower import *
+from ant.core.resetUSB import reset_USB_Device
+from config import *
+
+#-------------------------------------------------#
+#  ANT Callbacks                                  #
+#-------------------------------------------------#
+def device_paired(device_profile, channel_id):
+    print(f'Connected to {device_profile.name} ({channel_id.deviceNumber})')
+
+def search_timed_out(device_profile):
+    print(f'Could not connect to {device_profile.name}')
+
+def channel_closed(device_profile):
+    print(f'Channel closed for {device_profile.name}')
+
+def Rower(elapsedTime, distanceTraveled, instantaneousSpeed, cadence, power):
+    print("Speed Km/h {} Cadence Spm {} Power watts {}".format(str(instantaneousSpeed), str(cadence), str(power)))
+    print("Elapsed time seconds {} Distance traveled meters {}".format(str(elapsedTime), str(distanceTraveled)))
+    print("#########################################################")
+
+
+#-------------------------------------------------#
+#  Initialization                                 #
+#-------------------------------------------------#
+
+try:
+    reset_USB_Device()
+except Exception as ex:
+   print(ex)
+
+
+antnode = Node(driver.USB2Driver(log=LOG, debug=DEBUG, idProduct=0x1008))
+try:
+    antnode.start()
+    network = Network(key=NETWORK_KEY_ANT_PLUS, name='N:ANT+')
+    antnode.setNetworkKey(NETWORK_NUMBER_PUBLIC, network)
+    myTrainer = rower(antnode, network,
+             {'onDevicePaired' : device_paired,
+              'onSearchTimeout': search_timed_out,
+              'onChannelClosed': channel_closed,
+              'onRower'  : Rower})
+    # Unpaired, search:
+    myTrainer.open()
+    print('ANT started. Connecting to devices...')
+except ANTException as err:
+    print(f'Could not start ANT.\n{err}')
+
+#######################################################################################
+
+while True:
+    try:
+        time.sleep(1)
+    except KeyboardInterrupt:
+        break
+
+myTrainer.close()
+antnode.stop()
