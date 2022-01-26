@@ -33,9 +33,8 @@ def search_timed_out(device_profile):
 def channel_closed(device_profile):
     print(f'Channel closed for {device_profile.name}')
 
-def bike_Trainer(elapsedTime, distanceTraveled, instantaneousSpeed, cadence, power):
-    print("Speed Km/h {} Cadence {} Power {}".format(str(instantaneousSpeed), str(cadence), str(power)))
-    print("Elapsed Time {} Distance Traveled {}".format(str(elapsedTime), str(distanceTraveled)))
+def bike_Trainer(elapsedTime, distanceTraveled, instantaneousSpeed, kmSpeed, cadence, power):
+    print("Speed Km/h {} Cadence {} Power {}".format(str(kmSpeed), str(cadence), str(power)))
     print("#########################################################")
 
 
