@@ -18,7 +18,7 @@ class rower(DeviceProfile):
         self._elapsedTime = 0.0
         self._distanceTraveled = 0
         self._instantaneousSpeed = 0.0
-
+        self._kmSpeed = 0.0
         self._cadence = 0
         self._power = 0
         self._detected_device = None
@@ -34,7 +34,8 @@ class rower(DeviceProfile):
                self.page16.p16(data)
                self._elapsedTime = self.page16.elapsedTime
                self._distanceTraveled = self.page16.distanceTraveled
-               self._instantaneousSpeed = self.page16.speed
+               self._instantaneousSpeed = self.page16.instantaneousSpeed
+               self._kmSpeed = self.page16.kmSpeed
 
             if(dataPageNumber == 22):
                self._cadence = data[4]
@@ -43,7 +44,9 @@ class rower(DeviceProfile):
                    self._power = 0.0
                    self._cadence = 0
 
+#################################################################################
+
             callback = self.callbacks.get('onRower')
             if callback:
-                callback(self._elapsedTime, self._distanceTraveled, self._instantaneousSpeed, self._cadence, self._power)
+                callback(self._elapsedTime, self._distanceTraveled, self._instantaneousSpeed, self._kmSpeed, self._cadence, self._power)
 
