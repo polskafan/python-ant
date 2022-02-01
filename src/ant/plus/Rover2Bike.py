@@ -1,25 +1,53 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/python
+#
 '''
 Data processed
      Data Page 16
           Instantaneous speed 0.001 m/s
-     Data Page 25
+     Data Page 22
           Instantaneous Cadence spm
           Instantaneous power watts
 '''
 
 import time
-import subprocess
 import os
 import fcntl
-import sys
+import sys, hashlib
 
 from ant.core import driver
 from ant.core.node import Node, Network, ChannelID
 from ant.core.constants import NETWORK_KEY_ANT_PLUS, NETWORK_NUMBER_PUBLIC
-from ant.plus.bikeTrainer import *
+from ant.plus.rower import *
 from ant.core.resetUSB import reset_USB_Device
 from config import *
+
+from ant.plus.PowerMeterTx import PowerMeterTx
+from ant.plus.SpeedTx import SpeedTx
+
+
+########################   Get the serial number of Raspberry Pi
+
+def getserial():
+    # Extract serial from cpuinfo file
+    cpuserial = "0000000000000000"
+    try:
+        f = open('/proc/cpuinfo', 'r')
+        for line in f:
+            if line[0:6] == 'Serial':
+                cpuserial = line[10:26]
+        f.close()
+    except:
+        cpuserial = "ERROR000000000"
+    return cpuserial
+
+####################################################################
+
+POWER_ADJUST = 1.25
+SPEED_ADJUST = 2.5
+RPM_ADJUST = 3.0
+
+POWER_SENSOR_ID = int(int(hashlib.md5(getserial().encode()).hexdigest(), 16) & 0xfffe) + 1
+SPEED_SENSOR_ID = int(int(hashlib.md5(getserial().encode()).hexdigest(), 16) & 0xfffe) + 2
 
 #-------------------------------------------------#
 #  ANT Callbacks                                  #
@@ -33,10 +61,12 @@ def search_timed_out(device_profile):
 def channel_closed(device_profile):
     print(f'Channel closed for {device_profile.name}')
 
-def bike_Trainer(elapsedTime, distanceTraveled, instantaneousSpeed, kmSpeed, cadence, power):
-    print("Speed Km/h {} Cadence {} Power {}".format(str(kmSpeed), str(cadence), str(power)))
-    print("#########################################################")
+def Rower(elapsedTime, distanceTraveled, msSecSpeed, kmhSpeed, cadence, power):
 
+    print("INPUT --- Speed Km/h {} Cadence {} Power {}".format(str(kmhSpeed), str(cadence), str(power)))
+
+    speed_meter.update(1+(msSecSpeed*SPEED_ADJUST))
+    power_meter.update(int(power*POWER_ADJUST), int(cadence*RPM_ADJUST))
 
 #-------------------------------------------------#
 #  Initialization                                 #
@@ -53,11 +83,19 @@ try:
     antnode.start()
     network = Network(key=NETWORK_KEY_ANT_PLUS, name='N:ANT+')
     antnode.setNetworkKey(NETWORK_NUMBER_PUBLIC, network)
-    myTrainer = bikeTrainer(antnode, network,
+
+    speed_meter = SpeedTx(antnode, SPEED_SENSOR_ID)
+    speed_meter.open()
+    print("SUCCESFULLY STARTED speed meter with ANT+ ID " + repr(SPEED_SENSOR_ID))
+    power_meter = PowerMeterTx(antnode, POWER_SENSOR_ID)
+    power_meter.open()
+    print("SUCCESFULLY STARTED power meter with ANT+ ID " + repr(POWER_SENSOR_ID))
+
+    myTrainer = rower(antnode, network,
              {'onDevicePaired' : device_paired,
               'onSearchTimeout': search_timed_out,
               'onChannelClosed': channel_closed,
-              'onBikeTrainer'  : bike_Trainer})
+              'onRower'  : Rower})
     # Unpaired, search:
     myTrainer.open()
     print('ANT started. Connecting to devices...')

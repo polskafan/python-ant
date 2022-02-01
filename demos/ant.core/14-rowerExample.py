@@ -33,9 +33,8 @@ def search_timed_out(device_profile):
 def channel_closed(device_profile):
     print(f'Channel closed for {device_profile.name}')
 
-def Rower(elapsedTime, distanceTraveled, instantaneousSpeed, cadence, power):
-    print("Speed Km/h {} Cadence Spm {} Power watts {}".format(str(instantaneousSpeed), str(cadence), str(power)))
-    print("Elapsed time seconds {} Distance traveled meters {}".format(str(elapsedTime), str(distanceTraveled)))
+def Rower(elapsedTime, distanceTraveled, instantaneousSpeed, kmSpeed, cadence, power):
+    print("Speed Km/h {} Cadence Spm {} Power watts {}".format(str(kmSpeed), str(cadence), str(power)))
     print("#########################################################")
 
 
