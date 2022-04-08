@@ -30,13 +30,15 @@ from threading import Lock
 
 # USB1 driver uses a USB<->Serial bridge
 from serial import Serial, SerialException, SerialTimeoutException
+
 # USB2 driver uses direct USB connection. Requires PyUSB
-from usb.control import get_interface
-from usb.core import USBError, find as findDeviceUSB
-from usb.util import (find_descriptor, claim_interface, release_interface,
-                      dispose_resources, endpoint_direction, ENDPOINT_OUT, ENDPOINT_IN)
+import usb.core
+import usb.util
+from usb.util import (find_descriptor, claim_interface, endpoint_direction, ENDPOINT_OUT, ENDPOINT_IN)
+from usb.core import USBError
 
 from ant.core.exceptions import DriverError
+from asyncio import Event
 
 
 class Driver(object):
@@ -174,6 +176,7 @@ class USB2Driver(Driver):
 
     def __init__(self, idVendor=0x0fcf, idProduct=0x1008, bus=None, address=None, log=None, debug=False):
         super(USB2Driver, self).__init__(log=log, debug=debug)
+
         self.idVendor = idVendor
         self.idProduct = idProduct
         self.bus = bus
@@ -184,11 +187,13 @@ class USB2Driver(Driver):
         self._dev = None
         self._intNum = None
 
+        self.disconnected = Event()
+
     def _open(self):
         # Most of this is straight from the PyUSB example documentation
-        dev = findDeviceUSB(idVendor=self.idVendor, idProduct=self.idProduct,
-            custom_match=lambda d: (d.bus == self.bus or self.bus is None) and
-            (d.address == self.address or self.address is None))
+        dev = usb.core.find(idVendor=self.idVendor, idProduct=self.idProduct,
+                            custom_match=lambda d: (d.bus == self.bus or self.bus is None) and
+                                                   (d.address == self.address or self.address is None))
 
         if dev is None:
             raise DriverError("Could not open device (not found)")
@@ -198,35 +203,47 @@ class USB2Driver(Driver):
             if dev.is_kernel_driver_active(0):
                 try:
                     dev.detach_kernel_driver(0)
-                except USBError as e:
+                except usb.core.USBError as e:
                     exit("could not detach kernel driver: {}".format(e))
         except NotImplementedError:
             pass  # for non unix systems
 
         dev.set_configuration()
         cfg = dev.get_active_configuration()
-        interfaceNumber = cfg[(0, 0)].bInterfaceNumber
 
-        intf = find_descriptor(cfg,
-                               bInterfaceNumber=interfaceNumber,
-                               bAlternateSetting=get_interface(dev, interfaceNumber))
+        intf = cfg[(0, 0)]
 
-        claim_interface(dev, interfaceNumber)
+        claim_interface(dev, intf)
 
-        endpoint_out_matcher = \
-            lambda e: endpoint_direction(e.bEndpointAddress) == ENDPOINT_OUT
-        epOut = find_descriptor(intf, custom_match=endpoint_out_matcher)
-        assert epOut is not None
+        ep_out = find_descriptor(intf, custom_match=lambda ep: endpoint_direction(ep.bEndpointAddress) == ENDPOINT_OUT)
+        ep_in = find_descriptor(intf, custom_match=lambda ep: endpoint_direction(ep.bEndpointAddress) == ENDPOINT_IN)
 
-        endpoint_in_matcher = \
-            lambda e: endpoint_direction(e.bEndpointAddress) == ENDPOINT_IN
-        ep_in = find_descriptor(intf, custom_match=endpoint_in_matcher)
-        assert ep_in is not None
-
-        self._epOut = epOut
+        self._epOut = ep_out
         self._epIn = ep_in
         self._dev = dev
-        self._intNum = interfaceNumber
+        self._intNum = intf
+
+    def read(self, count):
+        if count <= 0:
+            raise DriverError("Could not read from device (zero request).")
+        if not self.opened:
+            raise DriverError("Could not read from device (not open).")
+
+        try:
+            data = self._read(count)
+        except USBError as e:
+            if e.errno in (60, 110):
+                raise e
+            else:
+                self.disconnected.set()
+                raise e
+
+        with self._lock:
+            if self.log:
+                self.log.logRead(data)
+            if self.debug:
+                self._dump(data, 'READ')
+        return data
 
     @property
     def _opened(self):
@@ -234,8 +251,8 @@ class USB2Driver(Driver):
 
     def _close(self):
         dev = self._dev
-        release_interface(dev, self._intNum)
-        dispose_resources(dev)
+        usb.util.release_interface(dev, self._intNum)
+        usb.util.dispose_resources(dev)
         self._dev = None
         # release 'Endpoints' objects for prevent undeleted 'Device' resource
         self._epOut = self._epIn = None

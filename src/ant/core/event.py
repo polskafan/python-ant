@@ -52,7 +52,7 @@ def EventPump(evm):
             if e.errno in (60, 110):  # timeout
                 continue
             else:
-                raise
+                return
 
         messages = []
         while buffer_:
